@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from ..domain.arena import ArenaService
+from ..domain.deathmatch import DeathmatchService, DeathmatchStartStatus, DeathmatchVoteStatus
+from ..domain.players import PlayersService, RewardThreshold
+from .queries.rating import RatingQueryService
+from .pages import Page
+from .presenters import BotPresenter
+
+
+@dataclass
+class BotWorkflow:
+    arena: ArenaService
+    rating_queries: RatingQueryService
+    players: PlayersService
+    deathmatch: DeathmatchService
+    presenter: BotPresenter
+    top_limit: int
+    reward_350_url: str | None = None
+    reward_700_url: str | None = None
+
+    async def start_page(self) -> Page:
+        return self.presenter.start_page()
+
+    async def duel_page(self, user_id: int) -> Page:
+        duel = await self.arena.prepare_duel(user_id)
+        if not duel:
+            return self.presenter.duel_unavailable()
+        return self.presenter.duel_page(duel)
+
+    async def top_page(self) -> Page:
+        listing = await self.rating_queries.top_listing(self.top_limit)
+        if not listing:
+            return self.presenter.top_empty()
+        return self.presenter.top_page(listing)
+
+    async def top100_page(self) -> Page:
+        ordered = await self.rating_queries.ordered_listing(100)
+        if not ordered:
+            return self.presenter.top_empty()
+        return self.presenter.top100_page(ordered.entries, show_all=ordered.show_all)
+
+    async def weighted_top_page(self) -> Page:
+        entries = await self.rating_queries.weighted_top()
+        if not entries:
+            return self.presenter.weighted_top_empty()
+        return self.presenter.weighted_top_page(entries)
+
+    async def favorites_page(self, user_id: int) -> Page:
+        summary = await self.rating_queries.favorites_summary()
+        if not summary:
+            return self.presenter.favorites_empty()
+        favorite = await self.players.get_favorite_channel(user_id)
+        return self.presenter.favorites_page(summary, favorite)
+
+    async def start_deathmatch(self, user_id: int) -> Page:
+        result = await self.deathmatch.request_start(user_id)
+        if result.status == DeathmatchStartStatus.NEED_CLASSIC_GAMES:
+            return self.presenter.deathmatch_need_classic_games(
+                self.deathmatch.min_classic_games,
+                result.remaining_games,
+            )
+        if result.status == DeathmatchStartStatus.NOT_ENOUGH_CHANNELS:
+            return self.presenter.deathmatch_not_enough_channels()
+        if not result.round:
+            return self.presenter.deathmatch_error()
+        return self.presenter.deathmatch_round_page(result.round)
+
+    async def process_vote(self, user_id: int, token: str, a_id: int, b_id: int, winner: str) -> Page:
+        success = await self.arena.apply_vote(user_id, token, a_id, b_id, winner)
+        if not success:
+            return self.presenter.duplicate_classic_vote()
+        reward_page = await self._maybe_secret_reward(user_id)
+        if reward_page:
+            return reward_page
+        return await self.duel_page(user_id)
+
+    async def process_deathmatch_vote(self, user_id: int, token: str, a_id: int, b_id: int, winner: str) -> Page:
+        result = await self.deathmatch.process_vote(user_id, token, a_id, b_id, winner)
+        if result.status == DeathmatchVoteStatus.INVALID_TOKEN:
+            return self.presenter.duplicate_deathmatch_vote()
+        if result.status == DeathmatchVoteStatus.STATE_MISSING:
+            return self.presenter.deathmatch_state_missing()
+        if result.status == DeathmatchVoteStatus.FINISHED and result.champion:
+            return self.presenter.deathmatch_finished(result.champion)
+        if result.status == DeathmatchVoteStatus.NEXT_ROUND and result.round:
+            return self.presenter.deathmatch_round_page(result.round)
+        return self.presenter.deathmatch_round_stale()
+
+    async def _maybe_secret_reward(self, user_id: int) -> Page | None:
+        thresholds: list[RewardThreshold] = []
+        if self.reward_350_url:
+            thresholds.append(RewardThreshold(limit=350, url=self.reward_350_url))
+        if self.reward_700_url:
+            thresholds.append(RewardThreshold(limit=700, url=self.reward_700_url))
+        if not thresholds:
+            return None
+        reward = await self.players.claim_reward(user_id, thresholds)
+        if reward:
+            return self.presenter.reward_page(reward.games, reward.url)
+        return None

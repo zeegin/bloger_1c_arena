@@ -1,0 +1,8 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/data
+      - ./channels.yaml:/app/channels.yaml:ro
+    restart: unless-stopped

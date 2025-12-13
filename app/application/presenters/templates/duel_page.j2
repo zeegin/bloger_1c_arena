@@ -1,0 +1,11 @@
+Выбери канал из рейтинга <b>{{ rating_band }}</b>:
+
+<b>A:</b> <a href="{{ channel_a.tg_url }}">{{ channel_a.title }}</a>
+{% if channel_a.description %}
+{{ channel_a.description.strip() }}
+{% endif %}
+
+<b>B:</b> <a href="{{ channel_b.tg_url }}">{{ channel_b.title }}</a>
+{% if channel_b.description %}
+{{ channel_b.description.strip() }}
+{% endif %}

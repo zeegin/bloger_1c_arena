@@ -1,0 +1,15 @@
+{% if initial %}
+🔥 Deathmatch стартует! Выбирай победителя.
+{% else %}
+🔥 Deathmatch продолжается! Чемпион ждёт нового соперника.
+{% endif %}
+
+<b>{{ first_label }}:</b> <a href="{{ current.tg_url }}">{{ current.title }}</a>
+{% if current.description %}
+{{ current.description.strip() }}
+{% endif %}
+
+<b>{{ second_label }}:</b> <a href="{{ opponent.tg_url }}">{{ opponent.title }}</a>
+{% if opponent.description %}
+{{ opponent.description.strip() }}
+{% endif %}

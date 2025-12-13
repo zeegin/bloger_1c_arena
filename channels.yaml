@@ -1,0 +1,421 @@
+channels:
+- title: 'Р1: Premium. Вакансии 1С для Синьоров'
+  url: https://t.me/joboneC
+  description: Независимый канал.
+  image: https://static2.tgstat.ru/channels/_100/1f/1fed23c1b3e33611d1a187a742224397.jpg
+- title: 1C Lite
+  url: https://t.me/lite1C
+  description: Новости фирмы "1С" в легкой форме. Предложения по  контенту присылайте на @inna_vinel
+  image: https://static4.tgstat.ru/channels/_100/e6/e6952d56d7ff42e58685a4a4f078cf5b.jpg
+- title: 1С:Предприятие 8
+  url: https://t.me/onecv8
+  description: Канал обо всем, что связано с 1С. Для обратной связи @shalimski
+  image: https://static7.tgstat.ru/channels/_100/51/519a26437027673d66e7857a9030bbca.jpg
+- title: Желтый клуб
+  url: https://t.me/yellowclub_official
+  description: Желтый клуб — сообщество 1С программистов
+  image: https://static3.tgstat.ru/channels/_100/3c/3c42e0914178fde3b8bb9b9f098977b2.jpg
+- title: 1С Работа (вакансии в штат и аутстаффинг)
+  url: https://t.me/esres_1c
+  description: Вакансии на проектную и постоянную работу для 1С специалистов.
+  image: https://static5.tgstat.ru/channels/_100/3c/3cd71b471c0334b48130b5990f819e2d.jpg
+- title: FastCode 1С
+  url: https://t.me/FastCodeIM
+  description: Шаблоны кода 1С, курсы, вебинары, статьи, ответы на вопросы, каталог разработок, работа и вакансии.
+  image: https://static10.tgstat.ru/channels/_100/68/68beb15d2fcd47a887f634379a965273.jpg
+- title: 1С:УНФ и 1С:Розница
+  url: https://t.me/small_biz
+  description: Приложения «1С:Розница» редакции 3.0 и «1С:Управление нашей фирмой» (1С:УНФ) вместе с 1С:РМК и мобильными приложениями
+    представляют линейку решений для малого бизнеса.
+  image: https://static2.tgstat.ru/channels/_100/ba/ba9893118b173a7a5d534124cf690a46.jpg
+- title: Р1:Мемы 1С
+  url: https://t.me/memoshnaya1C
+  description: Мемчики, кринж, баяны и вообще. Не только 1С.
+  image: https://static1.tgstat.ru/channels/_100/77/77ac18321c685b42010cd7b4c73152e9.jpg
+- title: 1C программист
+  url: https://t.me/odin1C_rus
+  description: Cтатьи, курсы, советы, шаблоны кода 1С. По всем вопросам @evgenycarter
+  image: https://static4.tgstat.ru/channels/_100/80/80e39573a104d9ac1221c80885a13864.jpg
+- title: Гайды по 1С
+  url: https://t.me/academy_1c
+  description: Рассказываем об 1C простым и доступным языком.
+  image: https://static6.tgstat.ru/channels/_100/9d/9d5216c2a01bc35cf01c296f5137de25.jpg
+- title: 1С:ЗУП от Ельцовой Алены. Школа СУПЕР-ЗУПЕР
+  url: https://t.me/zup_1C
+  description: Надоело все править в 1С:ЗУП руками? Присоединяйся!
+  image: https://static2.tgstat.ru/channels/_100/9c/9ce416df531d99dea33f1922089fd3a2.jpg
+- title: 1C Company
+  url: https://t.me/company1c
+  description: Официальный канал с новостями для 1С-разработчиков
+  image: https://static5.tgstat.ru/channels/_100/b5/b5bcdeaf89b0c43d57e1005694d59b04.jpg
+- title: Блог про 1С
+  url: https://t.me/blogpro1c
+  description: Программист 1С Алёна Мешкова
+  image: https://static7.tgstat.ru/channels/_100/02/0244b884455a6a6e41a6ceba71bd6ef9.jpg
+- title: Программирование в 1С для всех
+  url: https://t.me/Programming1CNizamutdinov
+  description: Канал о программировании и 1С. Полезные советы, уроки, примеры кода и многое другое для разработчиков и энтузиастов.
+  image: https://static5.tgstat.ru/channels/_100/0b/0bd2592c96bfac724f41a486f78140d8.jpg
+- title: Е.БУДНИ программиста 1С | Роман Чумадин
+  url: https://t.me/e_budni_programmer
+  description: Ежедневные будни программиста 1С - это канал с реальными задачами с работы, с собеседований, повседневные хитрости,
+    подборки и гайды. Подойдет для начинающих и опытных
+  image: https://static9.tgstat.ru/channels/_100/74/74ca0f4a7955c76e30cc699e2d4915ec.jpg
+- title: 1Cnik
+  url: https://t.me/by_1cnik
+  description: О программировании 1С
+  image: https://static8.tgstat.ru/channels/_100/a3/a353585d45881574df02e5024b1e0095.jpg
+- title: Заметки 1Сницы. Анастасия Синякова
+  url: https://t.me/yellow_note
+  description: О мире 1С, обучении, карьере.
+  image: https://static6.tgstat.ru/channels/_100/ad/ad5833c7e0fe850de4ddfa831015d819.jpg
+- title: Черненко Виталий (Жёлтый чайник 1С)
+  url: https://t.me/JuniorOneS
+  description: Только настоящий джедай сможет сдержать гнев и познать Силу Желтого программирования.
+  image: https://static6.tgstat.ru/channels/_100/dd/dd9389e980833c5c972248d9cf3a85ce.jpg
+- title: Дмитрий Котов | 1С Заметки
+  url: https://t.me/top_1c
+  description: Авторский канал Дмитрия Котова, пишу о всем связанном с 1С:Предприятием, работой и жизнью 1Сника
+  image: https://static1.tgstat.ru/channels/_100/96/96729f2dc7beb1dda3ff753ae6bd0c43.jpg
+- title: '1С PRO: Интеграция + ИИ | NIZAMOV.SCHOOL'
+  url: https://t.me/nizamov_studio_1c
+  description: Программирование 1С + ИИ. Разбираем кейсы, инструменты, и тренды.
+  image: https://static6.tgstat.ru/channels/_100/47/479d151d4769f182133b88f6b942643d.jpg
+- title: Junior 1С / Начинающие Разработчики 1С/ Стажеры 1C
+  url: https://t.me/razrab1c
+  description: Данный канал создан для тех, кто хочет попасть в мир 1С и закрепиться в нем, как специалист‍‍
+  image: https://static10.tgstat.ru/channels/_100/e4/e4a5d4183751c3a46368218f02003225.jpg
+- title: wiki 1С. База знаний, мысли и заметки.
+  url: https://t.me/wiki1c
+  description: Не только про 1С. Программирование и аналитика. Самообучение и развитие.
+  image: https://static9.tgstat.ru/channels/_100/f0/f0f3e6bb0c3a20dc4214b3786f9556ec.jpg
+- title: Зазеркалье 1С
+  url: https://t.me/wonderland_1C
+  description: Неофициальный канал технологического блога 1С "Заметки из Зазеркалья".
+  image: https://static4.tgstat.ru/channels/_100/77/77454e35cdf04bf52afdeefc04ac2bfb.jpg
+- title: OneSCast | 1С Предприятие
+  url: https://t.me/OneSCast
+  description: 'Работа в 1С и EDT. Авторский канал нетипичного 1С-ника: живу в Сербии, пишу код на английском.'
+  image: https://static4.tgstat.ru/channels/_100/72/726bdbb54df8bccbe6ce9e90f2200e43.jpg
+- title: Знакомый 1С-ник
+  url: https://t.me/znak1c
+  description: Коротко и ясно про актуальные проблемы в 1С и способы их решения
+  image: https://static8.tgstat.ru/channels/_100/db/db4736036eb84e3a627f2648c0945b86.jpg
+- title: WiseAdvice-IT - новости из мира 1С
+  url: https://t.me/WiseAdviceIT
+  description: Новости из мира 1С и IT-сферы, информация о выходе новых релизов технологических инструментов и комментарии
+    экспертов.
+  image: https://static2.tgstat.ru/channels/_100/7d/7df553290bd4a7a6fa49166ebe782680.jpg
+- title: Будни питониста
+  url: https://t.me/leontyev_ilya
+  description: Всем привет, меня зовут Леонтьев Илья. Я питонист, и пишу здесь обо всем подряд
+  image: https://static4.tgstat.ru/channels/_100/19/196da0dd24e0755cb68f6f20093ef79e.jpg
+- title: '1С: Учимся вместе 📚 / Василий про 1С'
+  url: https://t.me/VasiliiPro1C
+  description: Канал Василий про 1С!
+  image: https://static5.tgstat.ru/channels/_100/13/132c6dc9bbd77b421c85cf5a28130a64.jpg
+- title: Владимир Харин - Просто Pro 1С
+  url: https://t.me/prosto_pro1c
+  description: Блог об автоматизации учёта на платформе 1С для предпринимателей, ИТ-специалистов. Внедрение, разработка, кейсы
+    автоматизации на базе 1С. Мой опыт, полезные фишки.
+  image: https://static7.tgstat.ru/channels/_100/03/03e7170b2d693e2968eb37ba065bf4ec.jpg
+- title: quazareline
+  url: https://t.me/quazareline
+  description: Обзоры современных методов 1с программирования - использование БСП,  СКД и КД.
+  image: https://static1.tgstat.ru/channels/_100/63/639797066a4870bb6112fa22487cadba.jpg
+- title: Школа проектного специалиста
+  url: https://t.me/techitpm
+  description: Мы команда проектных специалистов международной IT компании по автоматизации бизнес процессов.
+  image: https://static9.tgstat.ru/channels/_100/e0/e0adf7847b8503dc2285d787d5a92841.jpg
+- title: 1С для торговли
+  url: https://t.me/torg1c_ru
+  description: Важные новости 1С и торговли. Автоматизация, маркетплейсы, маркировка, законодательство, торговое оборудование,
+    налоги. Написать редактору канала @social_media_1c
+  image: https://static6.tgstat.ru/channels/_100/95/950c6d70fea6a3e3b4ecff79723eca45.jpg
+- title: Заговори с Охотницей
+  url: https://t.me/talktoann
+  description: Pro осознанное развитие карьеры
+  image: https://static1.tgstat.ru/channels/_100/e8/e895d0218ed1eba89fdd65236c2545f9.jpg
+- title: Подготовка к собеседованиям по 1С и задачи по программированию.
+  url: https://t.me/sobes1c
+  description: Чтобы была возможность комментировать нужно вступить в группу @sobes_1c и там пройти проверку бота на спам
+  image: https://static4.tgstat.ru/channels/_100/98/983d1d4b5206e2255638e10fca8ec826.jpg
+- title: 1С-Рарус Официальный
+  url: https://t.me/rarus_official
+  description: Об информационных системах на 1С, базах данных, оптимизации от экспертов 1С-Рарус.
+  image: https://static3.tgstat.ru/channels/_100/14/144598d74b852a960ef618568cefa4c5.jpg
+- title: Никита Федькин - мысли, заметки, анонсы
+  url: https://t.me/nixel2007_thoughts
+  description: Связаться со мной - @nixel2007.
+  image: https://static5.tgstat.ru/channels/_100/c6/c65231152812d1c00a5660431a036505.jpg
+- title: Вакансии 1С и Bitrix-разработчиков
+  url: https://t.me/bitrix_1c_job
+  description: 'Как разместить вакансию:'
+  image: https://static9.tgstat.ru/channels/_100/e2/e24644f386ebbffb38c2c59299db492e.jpg
+- title: Клуб московских одинэсников
+  url: https://t.me/moscowclub1C
+  description: Канал клуба московских одинэсников.
+  image: https://static8.tgstat.ru/channels/_100/dc/dc185ea0019fdbd8ebb366840acd8160.jpg
+- title: 1С:ЭДО
+  url: https://t.me/edo_1c
+  description: Официальный канал команды разработки 1С:ЭДО
+  image: https://static4.tgstat.ru/channels/_100/60/6092201119cab9f5b267dac90a05f138.jpg
+- title: Никита Арипов | 1С, DevExp
+  url: https://t.me/AriN1C
+  description: Личный канал, где делюсь полезностями и идеями с сообществом 1С
+  image: https://static10.tgstat.ru/channels/_100/ba/ba12ccdd898b2d4cb631f10db88e5316.jpg
+- title: Александр Кунташов — про 1С и не только
+  url: https://t.me/kuntashov_devnotes
+  description: 'Заметки про разработку и смежные штуки: 1С, Vanessa Automation, DevOps в 1С, OneScript, PHP, Linux, JS, Python
+    и всякое вокруг и около ИТ.'
+  image: https://static6.tgstat.ru/channels/_100/bc/bcee1887e62a668c01b5252c92023b1f.jpg
+- title: ЕстьРесурс (решаем 1С задачи)
+  url: https://t.me/esres_1Coutstaff
+  description: Здесь резюме свободных 1С-спецов на фулл-тайм и по задачам, а также на сопровождение.
+  image: https://static2.tgstat.ru/channels/_100/de/de845483cd75072d585440cc098d4af3.jpg
+- title: Лапицкий, что не так с этим кодом?
+  url: https://t.me/code_review_1c
+  description: 30+ лет в IT.  20+ в 1С.
+  image: https://static10.tgstat.ru/channels/_100/27/27e1d3dba29317e7c1ec7f8a52ca6cbd.jpg
+- title: Жёлтая ржомба (1С Мемы)
+  url: https://t.me/app1c
+  description: Ржомбанем по желтому!
+  image: https://static9.tgstat.ru/channels/_100/eb/ebb46af2142e88a523287bf6c0def1b0.jpg
+- title: Vanessa Automation
+  url: https://t.me/VanessaAutomation
+  description: Новости проекта Vanessa Automation
+  image: https://static6.tgstat.ru/channels/_100/40/40d436b812a9b2cf6f5c7dd9214e4d84.jpg
+- title: INFOSTART Enterprise
+  url: https://t.me/infostart_enterprise
+  description: Команда профессионалов высокого уровня
+  image: https://static1.tgstat.ru/channels/_100/e5/e547f4c1faa7af67675b203bc480698f.jpg
+- title: Все о программировании в 1С, шаблоны кода, полезные инструменты и сервисы, стандарты разработки и паттерны
+  url: https://t.me/usefultools1c
+  description: Все о программировании в 1С, шаблоны кода, полезные инструменты и сервисы, стандарты разработки и паттерны
+  image: https://static8.tgstat.ru/channels/_100/45/459328f14e25378b4877a5664fe38bcf.jpg
+- title: 1С СППР Система Проектирования Прикладных Решений
+  url: https://t.me/SPPR1c
+  description: 1С СППР для системных архитекторов, руководителей проектов, методологов и бизнес-аналитиков/ Также темы по  TLA+,
+    Архитектура как код (AaC), псевдокод и Knime.
+  image: https://static5.tgstat.ru/channels/_100/86/862168f765daf493d5c284bb70c785f0.jpg
+- title: Koderline 1С
+  url: https://t.me/koderlineTg
+  description: ООО "Кодерлайн" - компания 1С:Франчайзи, занимаемся
+  image: https://static5.tgstat.ru/channels/_100/ab/abbb2e8c0daf2a79a01d36a329771caa.jpg
+- title: Игорь Апресов | Radio Ingvar
+  url: https://t.me/radio_ingvar
+  description: Не просто 1С — об идеях, которые стоят за кодом, о технологиях, которые вдохновляют, и о вещах, о которых редко
+    говорят
+  image: https://static4.tgstat.ru/channels/_100/a7/a74464804d721bd9952cbb52c52e30cf.jpg
+- title: 1С OSMINOG ПАРТНЕРКА
+  url: https://t.me/Zadachi1c
+  description: Канал от OSMINOG PROJECT о том, как можно зарабатывать на клиентах, которым раньше отказывали!
+  image: https://static4.tgstat.ru/channels/_100/83/8354d42336f38e3f5447344aa1dc3f5a.jpg
+- title: '1С KZ: Всё обо всём 🇰🇿'
+  url: https://t.me/kz_1c_all
+  description: 1С KZ. Всё обо всём
+  image: https://static1.tgstat.ru/channels/_100/54/5493f88e682af03f5795192d337e68bf.jpg
+- title: TurboConf 1С
+  url: https://t.me/turboconf
+  description: Новости TurboConf, уроки, советы по эффективной разработке в 1С.
+  image: https://static7.tgstat.ru/channels/_100/f1/f14992bc99a4254576bb74e0160e2f45.jpg
+- title: Алексей Лапицкий. ДРП-фриланс
+  url: https://t.me/freelancer1s
+  description: 20+ лет на фрилансе 1С.
+  image: https://static4.tgstat.ru/channels/_100/7c/7c75bf869ee43612753ef929f64ad1ff.jpg
+- title: 1С+web+mobile+etc
+  url: https://t.me/web_mobile_1C
+  description: 1С+web+mobile+etc
+  image: https://static3.tgstat.ru/channels/_100/0a/0a3f5ae9d5f4d19c2cd252035054af3b.jpg
+- title: 'Старт в 1С: вакансии и резюме без опыта'
+  url: https://t.me/job_for_juniors
+  description: Как Р1, только для джунов.
+  image: https://static4.tgstat.ru/channels/_100/c4/c4e97c83377b05e3619ecbdac75ac027.jpg
+- title: 1С | Тесты
+  url: https://t.me/testy1C
+  description: ''
+  image: https://static10.tgstat.ru/channels/_100/a1/a15e91a2e0253727b9a080deab3f3e12.jpg
+- title: OpenYellow | Open-source и 1С:Предприятие
+  url: https://t.me/OpenYellowProject
+  description: Агрегатор Open-source проектов для 1С:Предприятие
+  image: https://static6.tgstat.ru/channels/_100/e7/e7f08865b60fff2f61253bd8b2beddfe.jpg
+- title: INFOSTART Support
+  url: https://t.me/infostart_support
+  description: 'Рассказываем, как сократить рутину и безопасно автоматизировать процессы бухгалтерам, руководителям и кадровым
+    специалистам. Подробнее про нас: https://infostart.ru/aboutservice.'
+  image: https://static4.tgstat.ru/channels/_100/f9/f98fe47da3a074757fe9efb2dea1348c.jpg
+- title: 1С:БСП
+  url: https://t.me/learn_ssl1c
+  description: Неофициальный канал.
+  image: https://static8.tgstat.ru/channels/_100/b4/b41e6de12d0746b4c07f233b0a18d0d8.jpg
+- title: Курилка этого цирка
+  url: https://t.me/veryimportantclient
+  description: Коллеги, врачи запретили мне пить и курить.
+  image: https://static3.tgstat.ru/channels/_100/94/94beb597c603df992ae3aafaaf28e0e2.jpg
+- title: Клуб питерских одинэсников
+  url: https://t.me/therapy_1c
+  description: Сообщество для общения и обмена опытом между специалистами 1С!
+  image: https://static7.tgstat.ru/channels/_100/d1/d1230a4093797e2f0ee110645b3f95de.jpg
+- title: Мир 1С (Сергей Сыпачев)
+  url: https://t.me/sergsyp
+  description: Подкасты с 1Сниками.
+  image: https://static7.tgstat.ru/channels/_100/95/956f7e4332b2ffdfee0d1fb41191407f.jpg
+- title: BGcalls. Программист 1С
+  url: https://t.me/bgcalls
+  description: Здесь обсуждаем все, что должен знать программист от стажера до миддла.
+  image: https://static7.tgstat.ru/channels/_100/ee/eeafbf51aa765b37c36cc76738438aff.jpg
+- title: Хатка Бобра
+  url: https://t.me/evilbeaverHouse
+  description: Личный блог EvilBeaver. Программирование, музыка, мысли о жизни
+  image: https://static9.tgstat.ru/channels/_100/69/6966ae5a8b026e909c338931821e9821.jpg
+- title: Прогрессивный бухгалтер | 1С | ГЭНДАЛЬФ
+  url: https://t.me/progressivbuch
+  description: Более 30 лет помогаем бухгалтерам (и не только) разбираться в новостях, обновлениях и законодательстве.
+  image: https://static4.tgstat.ru/channels/_100/77/7793bb0ffcbf83c1acf68504bdc171b8.jpg
+- title: Блокнот 1С-ника | UNITED
+  url: https://t.me/united_1C
+  description: Канал для всех, кто так или иначе сталкивался с 1С.
+  image: https://static4.tgstat.ru/channels/_100/b1/b156b61b3b996c6b3c01d69a957915e5.jpg
+- title: Желтый юмор
+  url: https://t.me/yellow_humor
+  description: Специфический юмор, над которым смеются только 1сники.  Без рекламы
+  image: https://static9.tgstat.ru/channels/_100/a3/a34b45c351b7979ac8dd2fd4fb633098.jpg
+- title: В 1С после 40 или как стать Непрограммистом.
+  url: https://t.me/vitposle40
+  description: Переход в 1С после 40.
+  image: https://static8.tgstat.ru/channels/_100/cb/cb7203cdd3ef8cd906cb1a6001477cae.jpg
+- title: Новости 1С
+  url: https://t.me/digest_1C
+  description: Самые свежие новости из мира 1С  Автоматический отбор и краткое изложение каждой новости  Будь в курсе событий!  Для
+    контактов - @mirinda_tero
+  image: https://static10.tgstat.ru/channels/_100/2f/2f389bc4046631acc6dd20ac0078592f.jpg
+- title: про1С:УНФ и ии.. | Простые решения | Мордвин Сергей 👨‍💻
+  url: https://t.me/prostoUNF
+  description: Про УНФ — просто, но по делу
+  image: https://static10.tgstat.ru/channels/_100/7d/7de22af46e472cdc6cc4e3e8f0f13677.jpg
+- title: SilverBulleter's, LLC
+  url: https://t.me/silverbulleters
+  description: Официальный канал команды "Серебряная Пуля", www.silverbulleters.org
+  image: https://static2.tgstat.ru/channels/_100/b2/b2762abda590ee46c788947116198c55.jpg
+- title: Программирование в 1С | Школа Programming Store
+  url: https://t.me/learn_prosto
+  description: Школа Programming Store — образовательный проект от экспертов  компани с опытом в 1С 15+ лет.
+  image: https://static3.tgstat.ru/channels/_100/dd/dd04993172ad27ebb0185658cf5f762d.jpg
+- title: Koderline 1С - Платформа
+  url: https://t.me/koderlineplatforma1C
+  description: https://t.me/koderlineplatforma1Cchat
+  image: https://static9.tgstat.ru/channels/_100/34/34e99dee083f5de02c769a302edef724.jpg
+- title: Стандарты 1С v8std
+  url: https://t.me/v8std
+  description: v8std.ru
+  image: https://static1.tgstat.ru/channels/_100/de/de00d11c85ff3f3ca497ca855099912a.jpg
+- title: Другой 1С
+  url: https://t.me/another1C
+  description: 'Контакты: @Ivan_Belokamentsev, IEBelokamentsev@1cbit.ru'
+  image: https://static9.tgstat.ru/channels/_100/15/158ee560d70def0f4cab502dcdd3ad48.jpg
+- title: 'Иосиф Правец: ИТ-дневник'
+  url: https://t.me/pravets_IT
+  description: Добро пожаловать, коллега!
+  image: https://static5.tgstat.ru/channels/_100/5f/5fdd4a71fe35659ab96b5f158b268781.jpg
+- title: ИНФОСТАРТ Журнал
+  url: https://t.me/infostarttrend
+  description: Читайте новости INFOSTART.RU в Телеграм
+  image: https://static4.tgstat.ru/channels/_100/8a/8ab28cba2575980f4993e77223b74e62.jpg
+- title: Жёлтым по белому
+  url: https://t.me/ywhite
+  description: Я - Иван Белокаменцев.
+  image: https://static1.tgstat.ru/channels/_100/0e/0e47c83379335ee36975a8670b392e2f.jpg
+- title: '1С Stars: Вакансии, работа от FastCode 1C'
+  url: https://t.me/FastCodeCareer
+  description: Только лучшие вакансии в сфере 1С для сообщества FastCode 1C.
+  image: https://static4.tgstat.ru/channels/_100/45/4573af23d3d3a331917fea0f2598aa9c.jpg
+- title: 1С ДЛЯ БИЗНЕСА
+  url: https://t.me/giga_1c
+  description: 1С для IT-директора. Инсайты по проектам 1С ERP, ERP.УХ, УХ. Аналитика.
+  image: https://static10.tgstat.ru/channels/_100/23/237494810ab2f7fe2fc3064119a64709.jpg
+- title: Путь Аналитика | Данилов Роман
+  url: https://t.me/analitics_way
+  description: 'Здесь про ИТ, процессы, 1С и всё, что рядом:'
+  image: https://static5.tgstat.ru/channels/_100/e6/e67214ff930c919ef66b0a001c70a079.jpg
+- title: DevOps в 1с
+  url: https://t.me/DevOps_onec
+  description: Привет, меня зовут Иванов Егор.
+  image: https://static8.tgstat.ru/channels/_100/54/5457271d904ad2b83f6d314e5e178ce0.jpg
+- title: Вне эфира с Марией Серёгиной
+  url: https://t.me/vne_efira
+  description: Заметки о мышлении, процессах и системах в ИТ и в жизни от @maria_serjogina
+  image: https://static10.tgstat.ru/channels/_100/de/def7ba6d21a208844115ceb2c52865e3.jpg
+- title: Прусаков Никита | Про 1С
+  url: https://t.me/prusakov_pro_1c
+  description: Всё самое интересное из вселенной 1с.
+  image: https://static6.tgstat.ru/channels/_100/3a/3a4be1923fd4276506e92f71441c90f5.jpg
+- title: Дневник 1с программиста
+  url: https://t.me/uslugi1s
+  description: Моё имя Александр. Здесь пишу про 1С, делюсь своим опытом, рассказываю случаи из своей практики.
+  image: https://static10.tgstat.ru/channels/_100/86/8673e063b522cc56d79dc2bb220a5a1d.jpg
+- title: 1С из Дубая
+  url: https://t.me/Konstantin1C
+  description: Меня зовут Константин. Программирую на 1С уже больше 14 лет. Сейчас живу и работаю в Дубае.
+  image: https://static5.tgstat.ru/channels/_100/93/93e65a221c33dbf930c05793dfaef790.jpg
+- title: Павел Королев | IT Ланч
+  url: https://t.me/it_lunch
+  description: Истории и заметки за 15+ лет в IT.
+  image: https://static6.tgstat.ru/channels/_100/44/44c0ec84ba73f4514bd0d2ad1e55a8a9.jpg
+- title: Бездна 1С
+  url: https://t.me/bezdna1C
+  description: Здесь можно найти заметки и размышления о работе от 1Сника.
+  image: https://static5.tgstat.ru/channels/_100/e0/e01e3e8aa0635f491e20f879dc4f45a0.jpg
+- title: Александр Шапошников | Shapa.pro
+  url: https://t.me/shapa_pro_channel
+  description: Обо всём, что мне интересно
+  image: https://static7.tgstat.ru/channels/_100/cd/cd2a480d0e8117f8a3afab28fbb47590.jpg
+- title: 'ЧОТКИЙ 1С-НИК (손준형 АКА 1C: Middle East)'
+  url: https://t.me/chotkiy_1Cnik
+  description: Это мой телеграм-канал, в котором будут выходить важные и не очень новости, как об 1С, так и обо всяком))
+  image: https://static7.tgstat.ru/channels/_100/1f/1ff25dc27355992f4e77d9994748137c.jpg
+- title: 'Дмитрий Сидоренко: Мысли вслух'
+  url: https://t.me/dsdred_thinkings
+  description: 'Скетчбук: Мысли, черновики, задумки, релизы и не только.'
+  image: https://static8.tgstat.ru/channels/_100/eb/ebafe81c53d3ba8a44688d13fcbcab8c.jpg
+- title: 1С, Элемент и разные предприятия
+  url: https://t.me/elementxbsl
+  description: Average XBSL enjoyer
+  image: https://static4.tgstat.ru/channels/_100/f6/f646916e7ac419a1ad2dc48cfb182519.jpg
+- title: Турбокодер
+  url: https://t.me/turbocoderblog
+  description: Блог инди-разработчика Болсуна Михаила.
+  image: https://static6.tgstat.ru/channels/_100/43/4371fbea7d17ab0edfe72eff343d726b.jpg
+- title: Нет глупых вопросов
+  url: https://t.me/IT1CQA
+  description: Не бывает глупых вопросов. Глуп тот вопрос, который не был задан. Группа для обсуждения про мир 1С, айти (ИТ/IT
+    ) и все, что крутится вокруг этого. Анастасия Штей aka НастяШ
+  image: https://static1.tgstat.ru/channels/_100/20/20c779daeb66d21434f7c7d52aaeb2d8.jpg
+- title: КРОН бизнес-технологии
+  url: https://t.me/cronpartners
+  description: Добро пожаловать в наш канал! Мы - аккредитованная ИТ-компания, официальный партнер и ресурсный центр 1С. Разрабатываем
+    на 1С и создаем собственные продукты.
+  image: https://static10.tgstat.ru/channels/_100/19/19a633cb2ad556f450b76643eb7e179a.jpg
+- title: 🗓 OnEvents
+  url: https://t.me/OnEvents
+  description: https://onevents.ru/ - Календарь жизни сообщества 1С
+  image: https://static1.tgstat.ru/channels/_100/a8/a8283f231686b6c44c76d838e0f24a20.jpg
+- title: Е.Б.LIST (1С | Роман Чумадин)
+  url: https://t.me/e_b_list
+  description: Ежедневные будни | список заметок программиста 1С (Роман Чумадин)
+  image: https://static3.tgstat.ru/channels/_100/18/18910c4535af0eec02edaa2f64a0e51a.jpg
+- title: 'Иван Гусев | 1С: Справочник разработчика'
+  url: https://t.me/Reference1C
+  description: '- Мысли и находки из мира IT'
+  image: https://static8.tgstat.ru/channels/_100/ae/aea1d54768811ce6fdd5d04c2946c6bd.jpg
+- title: Магия 1С
+  url: https://t.me/magic1c
+  description: Для связи @magiya_1c
+  image: https://static3.tgstat.ru/channels/_100/2c/2c4e172aaaf7b72328b0649e82f4c73a.jpg
+- title: Цифробудка
+  url: https://t.me/cifrobudka
+  description: Цифробудка - гудим про цифровую трансформацию, цифру вообще  и не только.
+  image: https://static3.tgstat.ru/channels/_100/39/3988680cf4730ad01fde12c6555a7fbc.jpg
+- title: Нескучная автоматизация | 1С, управление бизнесом
+  url: https://t.me/UltraUnionRU
+  description: С 2005 г. автоматизируем бизнес-процессы любой сложности на базе 1С
+  image: https://static10.tgstat.ru/channels/_100/20/200a46a72c7605a6d98a4781a31e8d02.jpg

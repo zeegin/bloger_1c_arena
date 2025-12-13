@@ -1,0 +1,9 @@
+{% if show_all %}
+📈 <b>Все каналы:</b>
+{% else %}
+📈 <b>TOP 100:</b>
+{% endif %}
+
+{% for entry in entries -%}
+{{ loop.index }}. <a href="{{ entry.tg_url }}">{{ entry.title }}</a> — <b>{{ entry.rating | round(0) | int }}</b> (игр: {{ entry.games }}, побед: {{ entry.wins }})
+{% endfor %}
