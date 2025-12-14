@@ -64,12 +64,12 @@ class RatingServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(listing.entries), 2)
         self.assertEqual(listing.stats.games, 42)
 
-    async def test_weighted_top_sorts_by_win_rate(self):
+    async def test_winrate_top_sorts_by_win_rate(self):
         alpha = make_channel(1, "Alpha", games=10, wins=9)
         beta = make_channel(2, "Beta", games=20, wins=5)
         self.channels.all = [beta, alpha]
 
-        entries = await self.queries.weighted_top()
+        entries = await self.queries.winrate_top()
 
         self.assertEqual(entries[0].title, "Alpha")
         self.assertAlmostEqual(entries[0].rate_percent, 90.0)

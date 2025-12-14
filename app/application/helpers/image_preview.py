@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import random
-import time
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from PIL import Image
 
 from ...domain import Channel
 from .image_provider import ImageProvider
+from ...infrastructure.metrics import metrics
 
 
 class CombinedImageService:
@@ -18,29 +18,15 @@ class CombinedImageService:
         *,
         image_provider: ImageProvider,
         vs_images_dir: Path | None = None,
-        cache_ttl: int = 60 * 60,
         height: int = 512,
     ):
         self.height = height
-        self.cache_ttl = cache_ttl
-        self.cache: dict[str, tuple[float, BytesIO]] = {}
         self.vs_images = list(vs_images_dir.glob("*.png")) if vs_images_dir else []
         self._image_provider = image_provider
 
-    async def build_preview(self, a: Channel, b: Channel) -> BytesIO:
-        cache_key = f"{a.id}-{b.id}"
-        now = time.time()
-        cached = self.cache.get(cache_key)
-        if cached and now - cached[0] < self.cache_ttl:
-            return BytesIO(cached[1].getvalue())
-
-        photo = await self._compose_image(a, b)
-        self.cache[cache_key] = (now, BytesIO(photo.getvalue()))
-        return photo
-
-    async def _compose_image(self, a: Channel, b: Channel) -> BytesIO:
-        img_a = await self._load_channel_image((a.image_url or "").strip())
-        img_b = await self._load_channel_image((b.image_url or "").strip())
+    async def build_preview(self, a: Channel, b: Channel) -> tuple[BytesIO, Optional[str]]:
+        img_a, hit_a = await self._load_channel_image((a.image_url or "").strip())
+        img_b, hit_b = await self._load_channel_image((b.image_url or "").strip())
 
         if not img_a:
             img_a = self._placeholder_image()
@@ -49,6 +35,20 @@ class CombinedImageService:
 
         img_a = self._resize_to_height(img_a)
         img_b = self._resize_to_height(img_b)
+
+        def compose():
+            return self._compose_loaded(img_a, img_b)
+
+        photo = await self._render_with_metrics("media:preview_compose", compose, is_async=False)
+        if hit_a == "hit" and hit_b == "hit":
+            overall_hit = "hit"
+        elif hit_a == "hit" or hit_b == "hit":
+            overall_hit = "halfhit"
+        else:
+            overall_hit = "miss"
+        return photo, overall_hit
+
+    def _compose_loaded(self, img_a: Image.Image, img_b: Image.Image) -> BytesIO:
         vs_image = self._pick_vs_image()
         gap = 12
         vs_width = vs_image.width + gap if vs_image else 0
@@ -69,17 +69,21 @@ class CombinedImageService:
     async def close(self) -> None:
         await self._image_provider.close()
 
-    async def _load_channel_image(self, url: str) -> Optional[Image.Image]:
+    async def _load_channel_image(self, url: str) -> Tuple[Optional[Image.Image], Optional[str]]:
         if not url:
-            return None
-        data = await self._image_provider.fetch(url)
+            return None, None
+        data = await self._render_with_metrics(
+            "media:channel_fetch",
+            lambda: self._image_provider.fetch(url),
+            is_async=True,
+        )
         if not data:
-            return None
+            return None, None
         try:
             img = Image.open(BytesIO(data))
-            return img.convert("RGB")
+            return img.convert("RGB"), getattr(data, "cache_state", None)
         except Exception:
-            return None
+            return None, None
 
     def _placeholder_image(self) -> Image.Image:
         return Image.new("RGB", (self.height, self.height), color=(240, 240, 240))
@@ -101,3 +105,11 @@ class CombinedImageService:
             return self._resize_to_height(vs_image)
         except Exception:
             return None
+
+    async def _render_with_metrics(self, action: str, operation, *, is_async: bool = True):
+        if is_async:
+            async with metrics.span_async(action, source="media"):
+                return await operation()
+        else:
+            with metrics.span(action, source="media"):
+                return operation()

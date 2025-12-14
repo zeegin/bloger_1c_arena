@@ -86,7 +86,7 @@ class FakeRating:
         self.last_ordered_limit = limit
         return self.ordered_listing_result
 
-    async def weighted_top(self, limit: int = 100):
+    async def winrate_top(self, limit: int = 100):
         self.weighted_limit = limit
         return list(self.weighted_entries)
 
@@ -103,6 +103,7 @@ class FakePlayers:
         self.last_claim_thresholds = None
         self.deathmatch_unlocked = False
         self.deathmatch_games = 0
+        self.rating_unlocked = False
 
     async def get_favorite_channel(self, user_id: int):
         return self.favorite_channel
@@ -137,6 +138,12 @@ class FakePlayers:
 
     async def get_deathmatch_game_count(self, user_id: int):
         return self.deathmatch_games
+
+    async def has_rating_unlocked(self, user_id: int):
+        return self.rating_unlocked
+
+    async def mark_rating_unlocked(self, user_id: int):
+        self.rating_unlocked = True
 
 
 class FakeDeathmatch:
@@ -190,6 +197,7 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
             deathmatch=self.deathmatch,
             presenter=presenter,
             top_limit=5,
+            min_rating_games=0,
         )
 
     async def test_duel_page_renders_channels_and_buttons(self):
@@ -346,7 +354,7 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
 
         page = await self.workflow.start_deathmatch(user_id=88)
 
-        self.assertIn("осталось сыграть", page.text.lower())
+        self.assertIn("осталось", page.text.lower())
         self.assertIn("3", page.text)
 
     async def test_start_deathmatch_detects_unfinished_round(self):
@@ -427,19 +435,40 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(page.media), 1)
         self.assertEqual(page.media[0].channels, (champion, contender))
 
-    async def test_weighted_top_page_sorts_by_win_rate(self):
+    async def test_winrate_page_sorts_by_win_rate(self):
         self.rating_queries.weighted_entries = [
             WeightedEntry(title="Alpha", tg_url="https://t.me/alpha", wins=9, games=10, rate_percent=90.0),
             WeightedEntry(title="Beta", tg_url="https://t.me/beta", wins=9, games=30, rate_percent=30.0),
         ]
 
-        page = await self.workflow.weighted_top_page()
+        page = await self.workflow.winrate_page(user_id=1)
 
         self.assertIn("на отношении побед к играм", page.text.lower())
         first_entry = page.text.splitlines()[3]
         self.assertIn("Alpha", first_entry)
         self.assertIn("%", first_entry)
         self.assertEqual(page.buttons[0][0].callback_data, "top:back")
+
+    async def test_rating_pages_locked_until_enough_games(self):
+        self.workflow.min_rating_games = 10
+        self.players.classic_games = 3
+
+        locked_top = await self.workflow.top_page(user_id=1)
+        self.assertIn("Рейтинг откроется", locked_top.text)
+
+        locked_top100 = await self.workflow.top100_page(user_id=1)
+        self.assertIn("Рейтинг откроется", locked_top100.text)
+
+    async def test_rating_unlocks_after_threshold(self):
+        self.workflow.min_rating_games = 2
+        self.players.classic_games = 2
+        stats = RatingStats(games=10, players=5)
+        top_channel = make_channel(1, "Alpha")
+        self.rating_queries.top_listing_result = TopListing(entries=[to_top_entry(top_channel)], stats=stats)
+
+        page = await self.workflow.top_page(user_id=5)
+
+        self.assertIn("Alpha", page.text)
 
 
 if __name__ == "__main__":

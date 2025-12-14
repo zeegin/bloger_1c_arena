@@ -6,12 +6,14 @@ from app.domain import Channel
 from app.domain.arena.repositories import VotesRepository
 
 from .database import SQLiteDatabase
+from ..metrics import metrics
 
 
 class SQLiteVotesRepository(VotesRepository):
     def __init__(self, db: SQLiteDatabase):
         self._db = db
 
+    @metrics.wrap_async("db:votes.record_vote", source="database")
     async def record_vote(
         self,
         *,
@@ -73,5 +75,4 @@ class SQLiteVotesRepository(VotesRepository):
                     channel_b_after.id,
                 ),
             )
-
             await conn.commit()

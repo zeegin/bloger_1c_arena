@@ -8,6 +8,8 @@ from aiogram import Bot
 from .application.bot_app import TelegramBotApp
 from .application.bootstrap import bootstrap_app
 from .application.container import AppConfig
+from .application.metrics import configure_metrics_logger
+from .infrastructure.metrics import metrics
 
 load_dotenv()
 logging.basicConfig(
@@ -36,6 +38,7 @@ def load_app_config() -> AppConfig:
         if host.strip()
     } or None
     max_image_bytes = int(os.getenv("IMAGE_MAX_BYTES", "2000000"))
+    metrics_log_path = os.getenv("METRICS_LOG_PATH", "/data/metrics/actions.log")
     config = AppConfig(
         bot_token=bot_token,
         db_path=db_path,
@@ -48,17 +51,20 @@ def load_app_config() -> AppConfig:
         sync_channels_on_start=sync_on_start,
         image_allowed_hosts=allowed_hosts,
         max_image_size_bytes=max_image_bytes,
+        metrics_log_path=metrics_log_path,
     )
     logger.info(
-        "Config loaded: db_path=%s, top_n=%s, min_dm_games=%s, "
-        "sync_channels=%s, delete_missing=%s, image_hosts=%s, max_image_bytes=%s",
+        "Config loaded: db_path=%s, top_n=%s, min_dm_games=%s, min_rating_games=%s, "
+        "sync_channels=%s, delete_missing=%s, image_hosts=%s, max_image_bytes=%s, metrics_log=%s",
         config.db_path,
         config.top_n,
         config.min_classic_games_for_dm,
+        config.min_rating_games,
         config.sync_channels_on_start,
         config.delete_missing_channels,
         ",".join(sorted(config.image_allowed_hosts)) if config.image_allowed_hosts else "any",
         config.max_image_size_bytes,
+        config.metrics_log_path,
     )
     return config
 
@@ -67,6 +73,8 @@ async def main():
     config = load_app_config()
     logger.info("Bootstrapping application")
     async with bootstrap_app(config) as container:
+        metrics_logger = configure_metrics_logger(config.metrics_log_path)
+        metrics.configure(metrics_logger)
         if config.sync_channels_on_start:
             logger.info("Syncing channels from channels.yaml (delete_missing=%s)", config.delete_missing_channels)
             await container.sync_channels(

@@ -1,6 +1,0 @@
-⚖️ <b>Рейтинг побед:</b>
-Основан только на отношении побед к играм.
-
-{% for entry in entries -%}
-{{ loop.index }}. <a href="{{ entry.tg_url }}">{{ entry.title }}</a> — <b>{{ "%.1f"|format(entry.rate_percent) }}%</b> (побед: {{ entry.wins }}, игр: {{ entry.games }})
-{% endfor %}

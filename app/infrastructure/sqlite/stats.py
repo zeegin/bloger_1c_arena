@@ -5,12 +5,14 @@ from app.domain.rating.repositories import StatsRepository
 from app.infrastructure.mappers import deathmatch_stats_from_row, rating_stats_from_row
 
 from .database import SQLiteDatabase
+from ..metrics import metrics
 
 
 class SQLiteStatsRepository(StatsRepository):
     def __init__(self, db: SQLiteDatabase):
         self._db = db
 
+    @metrics.wrap_async("db:stats.rating", source="database")
     async def rating_stats(self) -> RatingStats:
         async with self._db.connect() as conn:
             cur = await conn.execute("SELECT COUNT(*) AS c FROM votes")
@@ -21,6 +23,7 @@ class SQLiteStatsRepository(StatsRepository):
             {"games": games_row["c"], "players": users_row["c"]}
         )
 
+    @metrics.wrap_async("db:stats.deathmatch", source="database")
     async def deathmatch_stats(self) -> DeathmatchStats:
         async with self._db.connect() as conn:
             cur = await conn.execute("SELECT COUNT(*) AS c FROM deathmatch_votes")

@@ -68,13 +68,13 @@ class BotPresenterTests(unittest.TestCase):
         self.assertIn("42", page.text)
         self.assertIn("7", page.text)
 
-    def test_weighted_page_lists_percentages(self):
+    def test_winrate_page_lists_percentages(self):
         entries = [
             WeightedEntry(title="Alpha", tg_url="https://a", wins=9, games=10, rate_percent=90.0),
             WeightedEntry(title="Beta", tg_url="https://b", wins=5, games=20, rate_percent=25.0),
         ]
 
-        page = self.presenter.weighted_top_page(entries)
+        page = self.presenter.winrate_top_page(entries)
 
         self.assertIn("90.0%", page.text)
         self.assertIn("Alpha", page.text)

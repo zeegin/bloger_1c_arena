@@ -105,6 +105,9 @@ class SQLiteRepositoriesTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(await self.players.is_deathmatch_unlocked(user_id))
         await self.players.mark_deathmatch_unlocked(user_id)
         self.assertTrue(await self.players.is_deathmatch_unlocked(user_id))
+        self.assertFalse(await self.players.has_rating_unlocked(user_id))
+        await self.players.mark_rating_unlocked(user_id)
+        self.assertTrue(await self.players.has_rating_unlocked(user_id))
 
         await self.players.set_favorite(user_id, channel.id)
         favorite = await self.players.get_favorite(user_id)

@@ -67,7 +67,7 @@ class RatingQueryService:
             show_all = True
         return OrderedListing(entries=self._to_top_entries(channels), show_all=show_all)
 
-    async def weighted_top(self, limit: int = 100) -> list[WeightedEntry]:
+    async def winrate_top(self, limit: int = 100) -> list[WeightedEntry]:
         channels = await self._rating.list_all_channels()
         if not channels:
             return []

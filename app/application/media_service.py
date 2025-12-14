@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from io import BytesIO
+from typing import Optional, Tuple
+
 from ..domain import Channel
 from .helpers.image_preview import CombinedImageService
 
@@ -8,7 +11,7 @@ class MediaService:
     def __init__(self, backend: CombinedImageService):
         self._backend = backend
 
-    async def build_duel_preview(self, a: Channel, b: Channel):
+    async def build_duel_preview(self, a: Channel, b: Channel) -> Tuple[BytesIO, Optional[str]]:
         return await self._backend.build_preview(a, b)
 
     async def close(self) -> None:

@@ -20,6 +20,7 @@ class BotWorkflow:
     top_limit: int
     reward_350_url: str | None = None
     reward_700_url: str | None = None
+    min_rating_games: int = 0
 
     async def start_page(self) -> Page:
         return self.presenter.start_page()
@@ -31,29 +32,43 @@ class BotWorkflow:
         return self.presenter.duel_page(duel)
 
     async def top_page(self, user_id: int | None = None) -> Page:
+        games = None
+        if user_id is not None:
+            games = await self.players.get_classic_game_count(user_id)
+            locked = await self._maybe_rating_unlock(user_id, games=games)
+            if locked:
+                return locked
         listing = await self.rating_queries.top_listing(self.top_limit)
         if not listing:
             return self.presenter.top_empty()
         player_stats = None
         if user_id is not None:
-            games = await self.players.get_classic_game_count(user_id)
             draws = await self.players.get_draw_count(user_id)
             player_stats = {"classic_games": games, "draws": draws}
         return self.presenter.top_page(listing, player_stats=player_stats)
 
-    async def top100_page(self) -> Page:
+    async def top100_page(self, user_id: int) -> Page:
+        locked = await self._maybe_rating_unlock(user_id)
+        if locked:
+            return locked
         ordered = await self.rating_queries.ordered_listing(100)
         if not ordered:
             return self.presenter.top_empty()
         return self.presenter.top100_page(ordered.entries, show_all=ordered.show_all)
 
-    async def weighted_top_page(self) -> Page:
-        entries = await self.rating_queries.weighted_top()
+    async def winrate_page(self, user_id: int) -> Page:
+        locked = await self._maybe_rating_unlock(user_id)
+        if locked:
+            return locked
+        entries = await self.rating_queries.winrate_top()
         if not entries:
-            return self.presenter.weighted_top_empty()
-        return self.presenter.weighted_top_page(entries)
+            return self.presenter.winrate_top_empty()
+        return self.presenter.winrate_top_page(entries)
 
     async def favorites_page(self, user_id: int) -> Page:
+        locked = await self._maybe_rating_unlock(user_id)
+        if locked:
+            return locked
         summary = await self.rating_queries.favorites_summary()
         if not summary:
             return self.presenter.favorites_empty()
@@ -135,3 +150,15 @@ class BotWorkflow:
             return None
         await self.players.mark_deathmatch_unlocked(user_id)
         return self.presenter.deathmatch_unlocked_page(games=games, min_games=min_games)
+
+    async def _maybe_rating_unlock(self, user_id: int, *, games: int | None = None) -> Page | None:
+        min_games = self.min_rating_games
+        if min_games <= 0:
+            return None
+        if await self.players.has_rating_unlocked(user_id):
+            return None
+        player_games = games if games is not None else await self.players.get_classic_game_count(user_id)
+        if player_games < min_games:
+            return self.presenter.rating_locked_page(min_games, player_games)
+        await self.players.mark_rating_unlocked(user_id)
+        return None

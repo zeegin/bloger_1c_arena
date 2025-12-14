@@ -10,12 +10,14 @@ from app.infrastructure.mappers import (
 )
 
 from .database import SQLiteDatabase
+from ..metrics import metrics
 
 
 class SQLiteDeathmatchRepository(DeathmatchRepository):
     def __init__(self, db: SQLiteDatabase):
         self._db = db
 
+    @metrics.wrap_async("db:deathmatch.get_state", source="database")
     async def get_state(self, user_id: int) -> Optional[DeathmatchState]:
         async with self._db.connect() as conn:
             cur = await conn.execute(
@@ -31,6 +33,7 @@ class SQLiteDeathmatchRepository(DeathmatchRepository):
             return None
         return deathmatch_state_from_row(dict(row))
 
+    @metrics.wrap_async("db:deathmatch.save_state", source="database")
     async def save_state(self, state: DeathmatchState) -> None:
         seen_payload, remaining_payload = serialize_deathmatch_state(state)
         async with self._db.connect() as conn:
@@ -59,11 +62,13 @@ class SQLiteDeathmatchRepository(DeathmatchRepository):
             )
             await conn.commit()
 
+    @metrics.wrap_async("db:deathmatch.delete_state", source="database")
     async def delete_state(self, user_id: int) -> None:
         async with self._db.connect() as conn:
             await conn.execute("DELETE FROM deathmatch_state WHERE user_id=?", (user_id,))
             await conn.commit()
 
+    @metrics.wrap_async("db:deathmatch.log_vote", source="database")
     async def log_vote(
         self,
         *,

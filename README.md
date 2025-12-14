@@ -13,6 +13,10 @@ docker compose up --build
    source .venv/bin/activate
    pip install -r requirements.txt
    ```
+   Если нужны утилиты для подготовки данных (например, загрузка каналов из HTML), поставь расширенный набор:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
 3. Запусти тесты:
    ```bash
    .venv/bin/python -m unittest discover -s tests
@@ -52,3 +56,15 @@ python3 scripts/fetch_tgstat_channels.py --output channels.yaml
 Если используешь внешние изображения, можно дополнительно ограничить загрузку:
 - `IMAGE_ALLOWED_HOSTS=cdn.tgstat.ru,cdn4.telesco.pe` — список разрешённых хостов (через запятую).
 - `IMAGE_MAX_BYTES=2000000` — максимальный размер скачиваемого файла в байтах.
+
+Для сбора «сырых» метрик действий Telegram бот пишет JSON‑строки в отдельный лог (по умолчанию `/data/metrics/actions.log`). Можно переопределить путь через `METRICS_LOG_PATH`. Строки вида:
+
+```jsonl
+{"ts":"2025-01-15T12:34:56.789+00:00","action":"callback:menu:play","duration_ms":423.1,"success":true,"user_id":123456}
+```
+
+Для формирования отчета выполните:
+
+```bash
+python3 scripts/calc_apdex.py --log ./data/metrics/actions.log --target 400 --output ./reports/apdex.md
+```

@@ -6,10 +6,15 @@ from typing import List
 from aiogram import Dispatcher, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, CallbackQuery, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from .container import AppContainer
 from .pages import Page, PageButton
 from .workflow import BotWorkflow
+from ..infrastructure.metrics import metrics
+
+DUEL_CAPTION_LIMIT = 1024
 
 
 class TelegramBotApp:
@@ -25,6 +30,7 @@ class TelegramBotApp:
             top_limit=container.config.top_n,
             reward_350_url=container.config.reward_350_url,
             reward_700_url=container.config.reward_700_url,
+            min_rating_games=container.config.min_rating_games,
         )
         self._logger = logging.getLogger(__name__)
 
@@ -51,6 +57,18 @@ class TelegramBotApp:
             chunks.append(current)
         return chunks
 
+    def _pop_caption_chunk(self, chunks: List[str]) -> str | None:
+        if not chunks:
+            return None
+        text = chunks.pop(0)
+        if len(text) <= DUEL_CAPTION_LIMIT:
+            return text
+        caption = text[:DUEL_CAPTION_LIMIT]
+        remainder = text[DUEL_CAPTION_LIMIT:].lstrip("\n")
+        if remainder:
+            chunks.insert(0, remainder)
+        return caption
+
     def _build_markup(self, buttons: list[list[PageButton]]):
         if not buttons:
             return None
@@ -60,27 +78,35 @@ class TelegramBotApp:
         ]
         return InlineKeyboardMarkup(inline_keyboard=inline_rows)
 
-    async def _render_page(self, chat_id: int, bot, page: Page):
-        for media in page.media:
-            if media.kind == "duel":
-                a, b = media.channels
-                photo = await self.container.media_service.build_duel_preview(a, b)
-                await bot.send_photo(
-                    chat_id,
-                    photo=BufferedInputFile(photo.getvalue(), filename="duel.jpg"),
-                    parse_mode="HTML",
-                    disable_notification=True,
-                )
+    async def _render_page(self, chat_id: int, bot, page: Page, *, extra_metrics: dict | None = None):
         chunks = self._chunk_text(page.text)
         markup = self._build_markup(page.buttons)
+        for media in page.media:
+            if media.kind != "duel":
+                continue
+            a, b = media.channels
+            photo, cache_state = await self.container.media_service.build_duel_preview(a, b)
+            if extra_metrics is not None and cache_state:
+                extra_metrics["media_cache"] = cache_state
+            caption = self._pop_caption_chunk(chunks)
+            is_last = not chunks
+            await bot.send_photo(
+                chat_id,
+                photo=BufferedInputFile(photo.getvalue(), filename="duel.jpg"),
+                caption=caption,
+                parse_mode=page.parse_mode,
+                disable_notification=True,
+                reply_markup=markup if is_last else None,
+            )
         total = len(chunks)
         for idx, chunk in enumerate(chunks):
+            is_last = idx == total - 1
             await bot.send_message(
                 chat_id,
                 chunk,
                 parse_mode=page.parse_mode,
                 disable_web_page_preview=page.disable_preview,
-                reply_markup=markup if idx == total - 1 else None,
+                reply_markup=markup if is_last else None,
             )
 
     async def _safe_answer(self, cq: CallbackQuery):
@@ -91,8 +117,28 @@ class TelegramBotApp:
                 return
             raise
 
-    async def _ensure_user(self, tg_user):
-        return await self.players.upsert_user(tg_user.id, tg_user.username, tg_user.first_name)
+    async def _ensure_user(self, tg_user, state: FSMContext | None):
+        if not tg_user:
+            return None
+        if state is not None:
+            data = await state.get_data()
+            cached_id = data.get("user_id")
+            cached_username = data.get("username")
+            cached_first_name = data.get("first_name")
+            if (
+                cached_id
+                and cached_username == tg_user.username
+                and cached_first_name == tg_user.first_name
+            ):
+                return cached_id
+        ensured = await self.players.upsert_user(tg_user.id, tg_user.username, tg_user.first_name)
+        if state is not None and ensured is not None:
+            await state.update_data(
+                user_id=ensured,
+                username=tg_user.username,
+                first_name=tg_user.first_name,
+            )
+        return ensured
 
     def _format_user(self, tg_user) -> str:
         if not tg_user:
@@ -103,30 +149,39 @@ class TelegramBotApp:
     def _log_action(self, tg_user, action: str) -> None:
         self._logger.info("User %s triggered %s", self._format_user(tg_user), action)
 
-    async def _handle_message(self, message: Message, handler):
-        self._log_action(message.from_user, f"message:{message.text or message.content_type}")
-        await self._ensure_user(message.from_user)
-        page = await handler()
-        if page:
-            await self._render_page(message.chat.id, message.bot, page)
+    async def _handle_message(self, message: Message, handler, state: FSMContext):
+        action_name = f"message:{message.text or message.content_type}"
+        self._log_action(message.from_user, action_name)
+        user_id = message.from_user.id if message.from_user else None
+        extra = {"user_id": user_id} if user_id is not None else None
+        async with metrics.span_async(action_name, source="telegram", extra=extra):
+            await self._ensure_user(message.from_user, state)
+            page = await handler()
+            if page:
+                await self._render_page(message.chat.id, message.bot, page)
 
-    async def _handle_query(self, cq: CallbackQuery, handler):
+    async def _handle_query(self, cq: CallbackQuery, handler, state: FSMContext):
         await self._safe_answer(cq)
-        self._log_action(cq.from_user, f"callback:{cq.data or '<empty>'}")
-        user_id = await self._ensure_user(cq.from_user)
-        page = await handler(user_id, cq)
-        if page:
-            await self._render_page(cq.message.chat.id, cq.bot, page)
+        action_name = f"callback:{cq.data or '<empty>'}"
+        self._log_action(cq.from_user, action_name)
+        user_id = cq.from_user.id if cq.from_user else None
+        extra = {"user_id": user_id} if user_id is not None else None
+        extra_data = dict(extra or {})
+        async with metrics.span_async(action_name, source="telegram", extra=extra_data):
+            ensured_id = await self._ensure_user(cq.from_user, state)
+            page = await handler(ensured_id, cq)
+            if page:
+                await self._render_page(cq.message.chat.id, cq.bot, page, extra_metrics=extra_data)
 
     def build_dispatcher(self) -> Dispatcher:
-        dp = Dispatcher()
+        dp = Dispatcher(storage=MemoryStorage())
 
         @dp.message(F.text == "/start")
-        async def start(m: Message):
-            await self._handle_message(m, self.workflow.start_page)
+        async def start(m: Message, state: FSMContext):
+            await self._handle_message(m, self.workflow.start_page, state)
 
         @dp.callback_query(F.data.startswith("menu:"))
-        async def menu(cq: CallbackQuery):
+        async def menu(cq: CallbackQuery, state: FSMContext):
             async def handler(user_id, cq):
                 data = cq.data or ""
                 action = data.split(":", 1)[1] if ":" in data else ""
@@ -138,26 +193,26 @@ class TelegramBotApp:
                     return await self.workflow.start_deathmatch(user_id)
                 return await self.workflow.top_page(user_id)
 
-            await self._handle_query(cq, handler)
+            await self._handle_query(cq, handler, state)
 
         @dp.callback_query(F.data == "top:100")
-        async def top100(cq: CallbackQuery):
-            await self._handle_query(cq, lambda _user_id, _cq: self.workflow.top100_page())
+        async def top100(cq: CallbackQuery, state: FSMContext):
+            await self._handle_query(cq, lambda user_id, _cq: self.workflow.top100_page(user_id), state)
 
         @dp.callback_query(F.data == "top:back")
-        async def top_back(cq: CallbackQuery):
-            await self._handle_query(cq, lambda user_id, _cq: self.workflow.top_page(user_id))
+        async def top_back(cq: CallbackQuery, state: FSMContext):
+            await self._handle_query(cq, lambda user_id, _cq: self.workflow.top_page(user_id), state)
 
         @dp.callback_query(F.data == "top:favorites")
-        async def top_favorites(cq: CallbackQuery):
-            await self._handle_query(cq, lambda user_id, _cq: self.workflow.favorites_page(user_id))
+        async def top_favorites(cq: CallbackQuery, state: FSMContext):
+            await self._handle_query(cq, lambda user_id, _cq: self.workflow.favorites_page(user_id), state)
 
         @dp.callback_query(F.data == "top:winrate")
-        async def top_winrate(cq: CallbackQuery):
-            await self._handle_query(cq, lambda _user_id, _cq: self.workflow.weighted_top_page())
+        async def top_winrate(cq: CallbackQuery, state: FSMContext):
+            await self._handle_query(cq, lambda user_id, _cq: self.workflow.winrate_page(user_id), state)
 
         @dp.callback_query(F.data.startswith("vote:"))
-        async def vote(cq: CallbackQuery):
+        async def vote(cq: CallbackQuery, state: FSMContext):
             async def handler(user_id, cq):
                 parts = (cq.data or "").split(":")
                 if len(parts) != 5:
@@ -171,10 +226,10 @@ class TelegramBotApp:
                     winner=winner,
                 )
 
-            await self._handle_query(cq, handler)
+            await self._handle_query(cq, handler, state)
 
         @dp.callback_query(F.data.startswith("dmvote:"))
-        async def deathmatch_vote(cq: CallbackQuery):
+        async def deathmatch_vote(cq: CallbackQuery, state: FSMContext):
             async def handler(user_id, cq):
                 parts = (cq.data or "").split(":")
                 if len(parts) != 5:
@@ -188,10 +243,10 @@ class TelegramBotApp:
                     winner=winner,
                 )
 
-            await self._handle_query(cq, handler)
+            await self._handle_query(cq, handler, state)
 
         @dp.callback_query(F.data.startswith("deathmatch:"))
-        async def deathmatch_actions(cq: CallbackQuery):
+        async def deathmatch_actions(cq: CallbackQuery, state: FSMContext):
             async def handler(user_id, cq):
                 action = (cq.data or "").split(":", 1)[1]
                 if action == "resume":
@@ -200,6 +255,6 @@ class TelegramBotApp:
                     return await self.workflow.restart_deathmatch(user_id)
                 return await self.workflow.start_deathmatch(user_id)
 
-            await self._handle_query(cq, handler)
+            await self._handle_query(cq, handler, state)
 
         return dp

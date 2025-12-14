@@ -15,6 +15,9 @@ class RatingService:
         self._channels = channels
         self._stats = stats
 
+    async def get_channel(self, channel_id: int) -> Channel:
+        return await self._channels.get(channel_id)
+
     async def list_top_channels(self, limit: int) -> list[Channel]:
         return list(await self._channels.list_top(limit))
 

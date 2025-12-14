@@ -6,12 +6,14 @@ from app.domain.shared.models import ActiveVoteToken, VoteToken
 from app.domain.shared.repositories import VoteTokensRepository
 
 from .database import SQLiteDatabase
+from ..metrics import metrics
 
 
 class SQLiteVoteTokensRepository(VoteTokensRepository):
     def __init__(self, db: SQLiteDatabase):
         self._db = db
 
+    @metrics.wrap_async("db:vote_tokens.create", source="database")
     async def create(self, user_id: int, vote_type: str, *, channel_a_id: int, channel_b_id: int) -> VoteToken:
         token = uuid.uuid4().hex
         async with self._db.connect() as conn:
@@ -25,6 +27,7 @@ class SQLiteVoteTokensRepository(VoteTokensRepository):
             await conn.commit()
         return VoteToken(token)
 
+    @metrics.wrap_async("db:vote_tokens.consume", source="database")
     async def consume(
         self,
         token: VoteToken,
@@ -46,6 +49,7 @@ class SQLiteVoteTokensRepository(VoteTokensRepository):
             await conn.commit()
             return cur.rowcount == 1
 
+    @metrics.wrap_async("db:vote_tokens.get_active", source="database")
     async def get_active(self, user_id: int, vote_type: str) -> ActiveVoteToken | None:
         async with self._db.connect() as conn:
             cur = await conn.execute(
@@ -67,6 +71,7 @@ class SQLiteVoteTokensRepository(VoteTokensRepository):
             channel_b_id=int(row["channel_b_id"]),
         )
 
+    @metrics.wrap_async("db:vote_tokens.invalidate", source="database")
     async def invalidate(self, user_id: int, vote_type: str) -> None:
         async with self._db.connect() as conn:
             await conn.execute(

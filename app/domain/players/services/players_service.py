@@ -60,6 +60,12 @@ class PlayersService:
     async def get_deathmatch_game_count(self, user_id: int) -> int:
         return await self._repo.get_deathmatch_games(user_id)
 
+    async def has_rating_unlocked(self, user_id: int) -> bool:
+        return await self._repo.has_rating_unlocked(user_id)
+
+    async def mark_rating_unlocked(self, user_id: int) -> None:
+        await self._repo.mark_rating_unlocked(user_id)
+
 
 @dataclass(frozen=True)
 class RewardThreshold:

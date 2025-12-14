@@ -9,10 +9,11 @@
 | `tg_user_id` | INTEGER UNIQUE | Telegram ID пользователя |
 | `username` | TEXT | username без `@` |
 | `first_name` | TEXT | отображаемое имя |
-| `is_admin` | INTEGER | Флаг администратора (0/1) |
 | `favorite_channel_id` | INTEGER FK → `channels.id` | Любимчик из режима deathmatch |
+| `classic_games` | INTEGER | Количество сыгранных классических игр (инкрементируется триггером при вставке в `votes`) |
 | `reward_stage` | INTEGER | Порог, для которого уже выдан секретный приз (0 / 350 / 700) |
 | `deathmatch_unlocked` | INTEGER | Флаг, что пользователь увидел уведомление о доступе к Deathmatch |
+| `rating_unlocked` | INTEGER | Флаг, что доступ к рейтингу уже открыт после порогового числа игр |
 | `created_at` | TEXT | время регистрации (`datetime('now')`) |
 
 Дополнительно: при `INSERT ... ON CONFLICT` Telegram-данные обновляются, любимчик устанавливается отдельным методом `set_user_favorite_channel`.
@@ -51,6 +52,9 @@
 
 Индексы:
 - `idx_votes_user_time` (`user_id`, `created_at DESC`) для аналитики/истории.
+- `idx_votes_user` (`user_id`) для быстрых агрегаций по пользователю.
+
+Триггер `trg_votes_classic_games` автоматически увеличивает `users.classic_games` при вставке голосов, а при миграциях инициализация вызывает пересчёт значения из существующих строк.
 
 ## Таблица `user_pair_seen`
 | Поле | Тип | Описание |

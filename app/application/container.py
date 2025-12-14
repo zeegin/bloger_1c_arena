@@ -35,6 +35,7 @@ class AppConfig:
     k_factor: float = 32.0
     top_n: int = 20
     min_classic_games_for_dm: int = 50
+    min_rating_games: int = 10
     reward_350_url: str | None = None
     reward_700_url: str | None = None
     delete_missing_channels: bool = True
@@ -42,6 +43,7 @@ class AppConfig:
     image_allowed_hosts: set[str] | None = None
     max_image_size_bytes: int = 2_000_000
     image_assets_path: str | None = None
+    metrics_log_path: str = "/data/metrics/actions.log"
 
 
 class AppContainer:
@@ -101,7 +103,7 @@ def create_container(config: AppConfig) -> AppContainer:
     players_service = PlayersService(players_repo)
     arena_service = ArenaService(
         pairing_repo=pairing_repo,
-        channels_repo=channels_repo,
+        rating_service=rating_service,
         vote_tokens=vote_tokens_repo,
         votes_repo=votes_repo,
         k_factor=config.k_factor,

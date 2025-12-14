@@ -37,22 +37,22 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
         self.channel_b = make_channel(2, "Beta")
         self.provider = DummyProvider()
 
-    async def test_build_preview_caches_rendered_bytes(self):
-        service = CombinedImageService(cache_ttl=3600, image_provider=self.provider)
+    async def test_build_preview_renders_every_time_without_cache(self):
+        service = CombinedImageService(image_provider=self.provider)
         self.addAsyncCleanup(service.close)
         compose_calls = 0
 
-        async def fake_compose(self, a, b):
+        def fake_compose_loaded(self, img_a, img_b):
             nonlocal compose_calls
             compose_calls += 1
             return BytesIO(b"rendered-image")
 
-        service._compose_image = MethodType(fake_compose, service)
+        service._compose_loaded = MethodType(fake_compose_loaded, service)
 
-        first = await service.build_preview(self.channel_a, self.channel_b)
-        second = await service.build_preview(self.channel_a, self.channel_b)
+        first, _ = await service.build_preview(self.channel_a, self.channel_b)
+        second, _ = await service.build_preview(self.channel_a, self.channel_b)
 
-        self.assertEqual(compose_calls, 1)
+        self.assertEqual(compose_calls, 2)
         self.assertIsNot(first, second)
         self.assertEqual(first.getvalue(), second.getvalue())
 
@@ -61,12 +61,12 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
         self.addAsyncCleanup(service.close)
 
         async def always_none(self, url):
-            return None
+            return None, None
 
         service._load_channel_image = MethodType(always_none, service)
         service._pick_vs_image = lambda: None
 
-        buffer = await service._compose_image(self.channel_a, self.channel_b)
+        buffer, _ = await service.build_preview(self.channel_a, self.channel_b)
         combined = Image.open(buffer)
 
         self.assertEqual(combined.size, (100 + 100 + 12, 100))
@@ -84,7 +84,7 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
         downloads = [red, blue]
 
         async def fake_load(self, url):
-            return downloads.pop(0)
+            return downloads.pop(0), "hit"
 
         service._load_channel_image = MethodType(fake_load, service)
         vs_banner = Image.new("RGBA", (30, 100), color=(0, 255, 0, 255))
@@ -93,7 +93,7 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
         resized_red_width = service._resize_to_height(red).width
         resized_blue_width = service._resize_to_height(blue).width
 
-        buffer = await service._compose_image(self.channel_a, self.channel_b)
+        buffer, _ = await service.build_preview(self.channel_a, self.channel_b)
         combined = Image.open(buffer)
 
         expected_width = resized_red_width + resized_blue_width + 12 + (vs_banner.width + 12)

@@ -7,7 +7,7 @@ from ..elo import elo_update
 from ..rating_band import RatingBand
 from ...shared.models import Channel, VoteToken
 from ...shared.repositories import VoteTokensRepository
-from ...rating.repositories import ChannelsRepository
+from ...rating import RatingService
 from ..repositories.pairing import PairingRepository
 from ..repositories.votes import VotesRepository
 from .pairing_policy import PairingPolicy
@@ -30,13 +30,13 @@ class ArenaService:
         self,
         *,
         pairing_repo: PairingRepository,
-        channels_repo: ChannelsRepository,
+        rating_service: RatingService,
         vote_tokens: VoteTokensRepository,
         votes_repo: VotesRepository,
         k_factor: float,
     ):
         self._pairing_policy = PairingPolicy(pairing_repo)
-        self._channels_repo = channels_repo
+        self._rating_service = rating_service
         self._vote_tokens = vote_tokens
         self._votes_repo = votes_repo
         self._k_factor = k_factor
@@ -68,8 +68,8 @@ class ArenaService:
         ):
             return False
 
-        a = await self._channels_repo.get(a_id)
-        b = await self._channels_repo.get(b_id)
+        a = await self._rating_service.get_channel(a_id)
+        b = await self._rating_service.get_channel(b_id)
         res = elo_update(a.rating, b.rating, winner=winner, k=self._k_factor)
 
         draw = winner == "D"

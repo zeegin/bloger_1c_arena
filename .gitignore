@@ -38,6 +38,7 @@ htmlcov/
 *.db-shm
 *.db-wal
 data/*.db*
+data/metrics/actions.log*
 
 # macOS artifacts
 .DS_Store
@@ -48,3 +49,8 @@ data/*.db*
 .Trashes
 .fseventsd
 .AppleDB
+
+# Reports
+reports/
+reports/*.bak
+reports/*.backup

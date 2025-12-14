@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import aiohttp
 
 from ...application.helpers.image_provider import ImageProvider
+from ..metrics import metrics
 
 
 class ImageDownloader:
@@ -89,7 +90,10 @@ class CachedImageProvider(ImageProvider):
         if path.exists():
             if self._is_fresh(path):
                 try:
-                    return path.read_bytes()
+                    with metrics.span("image:channel_cache_hit", source="media"):
+                        data = _CacheBytes(path.read_bytes())
+                        data.cache_state = "hit"
+                        return data
                 except OSError:
                     pass
             else:
@@ -98,18 +102,22 @@ class CachedImageProvider(ImageProvider):
                 except OSError:
                     pass
 
-        data = await self._downloader.fetch(url)
-        if data:
+        async with metrics.span_async("image:channel_download", source="media"):
+            raw = await self._downloader.fetch(url)
+        if raw:
             tmp_path = path.with_suffix(".tmp")
             try:
-                tmp_path.write_bytes(data)
+                tmp_path.write_bytes(raw)
                 tmp_path.replace(path)
             except OSError:
                 try:
                     tmp_path.unlink()
                 except OSError:
                     pass
-        return data
+            data = _CacheBytes(raw)
+            data.cache_state = "miss"
+            return data
+        return None
 
     def _cache_path(self, url: str) -> Path:
         digest = hashlib.sha1(url.encode("utf-8")).hexdigest()
@@ -124,3 +132,10 @@ class CachedImageProvider(ImageProvider):
 
     async def close(self) -> None:
         await self._downloader.close()
+
+
+class _CacheBytes(bytes):
+    def __new__(cls, payload: bytes):
+        return super().__new__(cls, payload)
+
+    cache_state: str | None = None
