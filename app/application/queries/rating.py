@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from ...domain.models import Channel, FavoriteChannelInfo, RatingStats, DeathmatchStats
+from ...domain.shared.models import Channel, FavoriteChannelInfo, RatingStats, DeathmatchStats
 from ...domain.rating import RatingService
 
 

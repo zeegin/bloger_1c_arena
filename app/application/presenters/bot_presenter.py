@@ -7,7 +7,7 @@ from typing import Sequence
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ...domain.deathmatch import DeathmatchRound
-from ...domain.models import Channel
+from ...domain.shared.models import Channel
 from ..queries.rating import FavoritesSummary, TopEntry, TopListing, WeightedEntry
 from ..pages import Page, PageButton, PageMediaRequest
 
@@ -78,8 +78,13 @@ class BotPresenter:
     def top_empty(self) -> Page:
         return Page("Пока нет каналов в базе.", buttons=self._main_menu_buttons())
 
-    def top_page(self, listing: TopListing) -> Page:
-        text = self._render("top_page.j2", entries=listing.entries, stats=listing.stats)
+    def top_page(self, listing: TopListing, player_stats: dict | None = None) -> Page:
+        text = self._render(
+            "top_page.j2",
+            entries=listing.entries,
+            stats=listing.stats,
+            player_stats=player_stats,
+        )
         return Page(text, buttons=self._rating_buttons("top20"))
 
     def top100_page(self, entries: Sequence[TopEntry], *, show_all: bool) -> Page:
@@ -96,12 +101,19 @@ class BotPresenter:
     def favorites_empty(self) -> Page:
         return Page("Пока никто не выбрал любимчика.", buttons=self._rating_buttons("favorites"))
 
-    def favorites_page(self, summary: FavoritesSummary, user_favorite: Channel | None) -> Page:
+    def favorites_page(
+        self,
+        summary: FavoritesSummary,
+        user_favorite: Channel | None,
+        *,
+        player_dm_games: int | None = None,
+    ) -> Page:
         text = self._render(
             "favorites_page.j2",
             favorites=summary.favorites,
             stats=summary.stats,
             user_favorite=user_favorite,
+            player_dm_games=player_dm_games,
         )
         return Page(text, buttons=self._rating_buttons("favorites"))
 
@@ -130,6 +142,8 @@ class BotPresenter:
             second_label=second_label,
             current=a,
             opponent=b,
+            round_number=round_info.number,
+            round_total=round_info.total,
         )
         buttons = [
             [
@@ -144,6 +158,28 @@ class BotPresenter:
     def reward_page(self, games: int, url: str) -> Page:
         text = self._render("reward_page.j2", games=games, url=url)
         return Page(text, buttons=self._main_menu_buttons(), disable_preview=False)
+
+    def deathmatch_unlocked_page(self, games: int, min_games: int) -> Page:
+        text = self._render(
+            "deathmatch_unlock.j2",
+            games=games,
+            min_games=min_games,
+        )
+        return Page(text, buttons=self._main_menu_buttons())
+
+    def deathmatch_resume_prompt(self) -> Page:
+        text = (
+            "🔥 У тебя есть незавершённый deathmatch.\n"
+            "Продолжить текущий турнир или начать заново по актуальному топу классики?"
+        )
+        buttons = [
+            [
+                PageButton("▶️ Продолжить", "deathmatch:resume"),
+                PageButton("🔄 Начать заново", "deathmatch:restart"),
+            ],
+        ]
+        buttons.extend(self._main_menu_buttons())
+        return Page(text, buttons=buttons)
 
     def duplicate_classic_vote(self) -> Page:
         return Page("Голос уже учтён. Запроси новый дуэль.", buttons=self._main_menu_buttons())

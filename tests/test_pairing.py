@@ -3,7 +3,7 @@ from typing import Callable
 from unittest.mock import patch
 
 from app.domain.arena import PairingPolicy
-from app.domain.models import Channel
+from app.domain.shared.models import Channel
 
 
 def make_channel(idx: int, title: str, rating: float = 1500.0) -> Channel:
@@ -61,7 +61,7 @@ class PairingPolicyTests(unittest.IsolatedAsyncioTestCase):
         self.repo.pool = [a, b]
         self.repo.closest = {1: [b], 2: [a]}
 
-        with patch("app.domain.arena.pairing.random.choice", side_effect=lambda seq: seq[0]):
+        with patch("app.domain.arena.services.pairing_policy.random.choice", side_effect=lambda seq: seq[0]):
             pair = await self.policy.get_pair(user_id=7)
 
         self.assertEqual(pair, (a, b))
@@ -74,7 +74,7 @@ class PairingPolicyTests(unittest.IsolatedAsyncioTestCase):
         self.repo.closest = {1: [b], 2: [a]}
         self.repo.has_seen_override = lambda *_: True
 
-        with patch("app.domain.arena.pairing.random.choice", side_effect=lambda seq: seq[0]):
+        with patch("app.domain.arena.services.pairing_policy.random.choice", side_effect=lambda seq: seq[0]):
             pair = await self.policy.get_pair(user_id=9)
 
         self.assertEqual(pair, (a, b))
@@ -87,7 +87,7 @@ class PairingPolicyTests(unittest.IsolatedAsyncioTestCase):
         self.repo.closest = {1: []}
         self.repo.has_seen_override = lambda *_: True
 
-        with patch("app.domain.arena.pairing.random.choice", side_effect=lambda seq: seq[0]):
+        with patch("app.domain.arena.services.pairing_policy.random.choice", side_effect=lambda seq: seq[0]):
             result = await self.policy.get_pair(user_id=12)
 
         self.assertIsNone(result)

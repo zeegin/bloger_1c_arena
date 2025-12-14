@@ -3,9 +3,10 @@ from io import BytesIO
 from types import MethodType
 
 from PIL import Image
+from typing import Optional
 
 from app.application.helpers.image_preview import CombinedImageService
-from app.domain.models import Channel
+from app.domain.shared.models import Channel
 
 
 def make_channel(idx: int, title: str) -> Channel:
@@ -22,13 +23,22 @@ def make_channel(idx: int, title: str) -> Channel:
     )
 
 
+class DummyProvider:
+    async def fetch(self, url: str) -> Optional[bytes]:  # pragma: no cover - trivial stub
+        return None
+
+    async def close(self) -> None:  # pragma: no cover - trivial stub
+        return None
+
+
 class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.channel_a = make_channel(1, "Alpha")
         self.channel_b = make_channel(2, "Beta")
+        self.provider = DummyProvider()
 
     async def test_build_preview_caches_rendered_bytes(self):
-        service = CombinedImageService(cache_ttl=3600)
+        service = CombinedImageService(cache_ttl=3600, image_provider=self.provider)
         self.addAsyncCleanup(service.close)
         compose_calls = 0
 
@@ -47,13 +57,13 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(first.getvalue(), second.getvalue())
 
     async def test_compose_image_uses_placeholders_on_failed_downloads(self):
-        service = CombinedImageService(height=100)
+        service = CombinedImageService(height=100, image_provider=self.provider)
         self.addAsyncCleanup(service.close)
 
-        async def always_none(self, session, url):
+        async def always_none(self, url):
             return None
 
-        service._download_image = MethodType(always_none, service)
+        service._load_channel_image = MethodType(always_none, service)
         service._pick_vs_image = lambda: None
 
         buffer = await service._compose_image(self.channel_a, self.channel_b)
@@ -66,17 +76,17 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
             self.assertGreaterEqual(component, 230)
 
     async def test_compose_image_merges_resized_images_and_vs_banner(self):
-        service = CombinedImageService(height=100)
+        service = CombinedImageService(height=100, image_provider=self.provider)
         self.addAsyncCleanup(service.close)
 
         red = Image.new("RGB", (50, 50), color=(255, 0, 0))
         blue = Image.new("RGB", (35, 200), color=(0, 0, 255))
         downloads = [red, blue]
 
-        async def fake_download(self, session, url):
+        async def fake_load(self, url):
             return downloads.pop(0)
 
-        service._download_image = MethodType(fake_download, service)
+        service._load_channel_image = MethodType(fake_load, service)
         vs_banner = Image.new("RGBA", (30, 100), color=(0, 255, 0, 255))
         service._pick_vs_image = lambda: vs_banner
 
@@ -100,11 +110,3 @@ class CombinedImageServiceTests(unittest.IsolatedAsyncioTestCase):
         blue_start = vs_start + vs_banner.width + 12
         blue_px = combined.getpixel((blue_start + 5, mid_y))
         self.assertGreater(blue_px[2], 200)
-
-    async def test_url_allow_list_blocks_unexpected_hosts(self):
-        service = CombinedImageService(allowed_hosts={"allowed.com"})
-        self.addAsyncCleanup(service.close)
-
-        self.assertTrue(service._is_allowed_url("https://allowed.com/img.png"))
-        self.assertFalse(service._is_allowed_url("ftp://allowed.com/img.png"))
-        self.assertFalse(service._is_allowed_url("https://evil.com/img.png"))

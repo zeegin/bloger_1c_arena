@@ -10,7 +10,7 @@ from app.domain.deathmatch import (
     DeathmatchVoteResult,
     DeathmatchVoteStatus,
 )
-from app.domain.models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
+from app.domain.shared.models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
 from app.domain.players import RewardGrant
 from app.application.queries.rating import FavoritesSummary, OrderedListing, TopEntry, TopListing, WeightedEntry
 
@@ -98,14 +98,20 @@ class FakePlayers:
     def __init__(self):
         self.favorite_channel: Channel | None = None
         self.classic_games = 0
+        self.draws = 0
         self.reward_stage = 0
         self.last_claim_thresholds = None
+        self.deathmatch_unlocked = False
+        self.deathmatch_games = 0
 
     async def get_favorite_channel(self, user_id: int):
         return self.favorite_channel
 
     async def get_classic_game_count(self, user_id: int):
         return self.classic_games
+
+    async def get_draw_count(self, user_id: int):
+        return self.draws
 
     async def get_reward_stage(self, user_id: int):
         return self.reward_stage
@@ -123,14 +129,26 @@ class FakePlayers:
                 return RewardGrant(games=self.classic_games, url=threshold.url)
         return None
 
+    async def has_unlocked_deathmatch(self, user_id: int):
+        return self.deathmatch_unlocked
+
+    async def mark_deathmatch_unlocked(self, user_id: int):
+        self.deathmatch_unlocked = True
+
+    async def get_deathmatch_game_count(self, user_id: int):
+        return self.deathmatch_games
+
 
 class FakeDeathmatch:
     def __init__(self):
-        self._min_games = 3
+        self._min_games = 50
         self.start_result = DeathmatchStartResult(status=DeathmatchStartStatus.NOT_ENOUGH_CHANNELS)
         self.vote_result = DeathmatchVoteResult(status=DeathmatchVoteStatus.STATE_MISSING)
         self.start_calls: list[int] = []
         self.vote_calls: list[tuple[int, str, int, int, str]] = []
+        self.pending_state = False
+        self.resume_round_result: DeathmatchRound | None = None
+        self.reset_calls: list[int] = []
 
     @property
     def min_classic_games(self):
@@ -147,6 +165,15 @@ class FakeDeathmatch:
     async def process_vote(self, user_id: int, token: str, a_id: int, b_id: int, winner: str):
         self.vote_calls.append((user_id, token, a_id, b_id, winner))
         return self.vote_result
+
+    async def has_active_round(self, user_id: int) -> bool:
+        return self.pending_state
+
+    async def resume_round(self, user_id: int):
+        return self.resume_round_result
+
+    async def reset(self, user_id: int):
+        self.reset_calls.append(user_id)
 
 
 class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
@@ -205,6 +232,19 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(page.buttons[1][0].callback_data, "top:winrate")
         self.assertEqual(page.buttons[-1][0].callback_data, "menu:deathmatch")
 
+    async def test_top_page_includes_player_stats_when_user_known(self):
+        channel_a = make_channel(1, "Alpha")
+        entries = [to_top_entry(channel_a)]
+        stats = RatingStats(games=10, players=4)
+        self.rating_queries.top_listing_result = TopListing(entries=entries, stats=stats)
+        self.players.classic_games = 25
+        self.players.draws = 5
+
+        page = await self.workflow.top_page(user_id=99)
+
+        self.assertIn("25", page.text)
+        self.assertIn("5", page.text)
+
     async def test_favorites_page_lists_fans_and_user_favorite(self):
         favorite_info = FavoriteChannelInfo(id=5, title="Gamma", tg_url="https://t.me/gamma", fans=12)
         self.rating_queries.favorites_summary_result = FavoritesSummary(
@@ -213,11 +253,14 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         )
         self.players.favorite_channel = make_channel(99, "PersonalFav")
 
+        self.players.deathmatch_games = 12
+
         page = await self.workflow.favorites_page(user_id=50)
 
         self.assertIn("Gamma", page.text)
         self.assertIn("12", page.text)
         self.assertIn("Твой любимчик", page.text)
+        self.assertIn("deathmatch", page.text.lower())
 
     async def test_process_vote_rejects_duplicate_tokens(self):
         self.arena.apply_result = False
@@ -232,6 +275,7 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         channel_b = make_channel(2, "Beta")
         self.arena.duel = DuelPair(channel_a=channel_a, channel_b=channel_b, token="fresh", rating_band="1000-1200")
         self.arena.apply_result = True
+        self.players.classic_games = 10
 
         page = await self.workflow.process_vote(15, token="token", a_id=1, b_id=2, winner="A")
 
@@ -239,10 +283,34 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Alpha", page.text)
         self.assertEqual(page.media[0].channels, (channel_a, channel_b))
 
+    async def test_process_vote_returns_deathmatch_unlock_page_on_threshold(self):
+        self.players.classic_games = self.deathmatch.min_classic_games
+        self.arena.apply_result = True
+
+        page = await self.workflow.process_vote(5, token="token", a_id=1, b_id=2, winner="B")
+
+        self.assertIn("теперь тебе открыт режим", page.text.lower())
+        self.assertTrue(self.players.deathmatch_unlocked)
+        self.assertEqual(self.arena.prepare_calls, [])
+
+    async def test_process_vote_skips_unlock_when_already_notified(self):
+        self.players.classic_games = self.deathmatch.min_classic_games
+        self.players.deathmatch_unlocked = True
+        self.arena.apply_result = True
+        channel_a = make_channel(1, "Alpha")
+        channel_b = make_channel(2, "Beta")
+        self.arena.duel = DuelPair(channel_a=channel_a, channel_b=channel_b, token="next", rating_band="1200-1400")
+
+        page = await self.workflow.process_vote(7, token="token", a_id=1, b_id=2, winner="A")
+
+        self.assertIn("Alpha", page.text)
+        self.assertEqual(page.media[0].channels, (channel_a, channel_b))
+
     async def test_process_vote_returns_reward_page_when_threshold_reached(self):
         self.workflow.reward_350_url = "https://secret/350"
         self.players.classic_games = 350
         self.players.reward_stage = 0
+        self.players.deathmatch_unlocked = True
         self.arena.apply_result = True
 
         page = await self.workflow.process_vote(20, token="token", a_id=1, b_id=2, winner="A")
@@ -256,6 +324,7 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         self.workflow.reward_350_url = None
         self.players.classic_games = 350
         self.players.reward_stage = 0
+        self.players.deathmatch_unlocked = True
         channel_a = make_channel(1, "Alpha")
         channel_b = make_channel(2, "Beta")
         self.arena.duel = DuelPair(channel_a=channel_a, channel_b=channel_b, token="fresh", rating_band="1000-1200")
@@ -280,6 +349,49 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("осталось сыграть", page.text.lower())
         self.assertIn("3", page.text)
 
+    async def test_start_deathmatch_detects_unfinished_round(self):
+        self.deathmatch.pending_state = True
+
+        page = await self.workflow.start_deathmatch(user_id=42)
+
+        self.assertIn("незавершённый deathmatch", page.text.lower())
+        self.assertEqual(self.deathmatch.start_calls, [])
+
+    async def test_resume_deathmatch_returns_round(self):
+        champion = make_channel(1, "Champion")
+        contender = make_channel(2, "Contender")
+        self.deathmatch.resume_round_result = DeathmatchRound(
+            current=champion,
+            opponent=contender,
+            token="resume",
+            initial=False,
+            number=2,
+            total=20,
+        )
+
+        page = await self.workflow.resume_deathmatch(user_id=5)
+
+        self.assertIn("Deathmatch продолжается", page.text)
+        self.assertEqual(self.deathmatch.reset_calls, [])
+
+    async def test_resume_deathmatch_fallbacks_when_missing_round(self):
+        self.deathmatch.resume_round_result = None
+
+        page = await self.workflow.resume_deathmatch(user_id=6)
+
+        self.assertNotIn("незавершённый deathmatch", page.text.lower())
+        self.assertEqual(self.deathmatch.reset_calls, [6])
+
+    async def test_restart_deathmatch_clears_state(self):
+        self.deathmatch.start_result = DeathmatchStartResult(
+            status=DeathmatchStartStatus.NOT_ENOUGH_CHANNELS,
+        )
+
+        await self.workflow.restart_deathmatch(user_id=7)
+
+        self.assertEqual(self.deathmatch.reset_calls, [7])
+        self.assertEqual(self.deathmatch.start_calls, [7])
+
     async def test_process_deathmatch_vote_finished_announces_champion(self):
         champion = make_channel(7, "Omega")
         self.deathmatch.vote_result = DeathmatchVoteResult(
@@ -295,7 +407,14 @@ class BotWorkflowTests(unittest.IsolatedAsyncioTestCase):
     async def test_process_deathmatch_vote_next_round_builds_page(self):
         champion = make_channel(1, "Champion", description="Strong")
         contender = make_channel(2, "Challenger", description="Brave")
-        round_info = DeathmatchRound(current=champion, opponent=contender, token="round1", initial=False)
+        round_info = DeathmatchRound(
+            current=champion,
+            opponent=contender,
+            token="round1",
+            initial=False,
+            number=4,
+            total=20,
+        )
         self.deathmatch.vote_result = DeathmatchVoteResult(
             status=DeathmatchVoteStatus.NEXT_ROUND,
             round=round_info,

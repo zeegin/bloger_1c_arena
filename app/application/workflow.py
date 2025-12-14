@@ -30,11 +30,16 @@ class BotWorkflow:
             return self.presenter.duel_unavailable()
         return self.presenter.duel_page(duel)
 
-    async def top_page(self) -> Page:
+    async def top_page(self, user_id: int | None = None) -> Page:
         listing = await self.rating_queries.top_listing(self.top_limit)
         if not listing:
             return self.presenter.top_empty()
-        return self.presenter.top_page(listing)
+        player_stats = None
+        if user_id is not None:
+            games = await self.players.get_classic_game_count(user_id)
+            draws = await self.players.get_draw_count(user_id)
+            player_stats = {"classic_games": games, "draws": draws}
+        return self.presenter.top_page(listing, player_stats=player_stats)
 
     async def top100_page(self) -> Page:
         ordered = await self.rating_queries.ordered_listing(100)
@@ -53,9 +58,12 @@ class BotWorkflow:
         if not summary:
             return self.presenter.favorites_empty()
         favorite = await self.players.get_favorite_channel(user_id)
-        return self.presenter.favorites_page(summary, favorite)
+        dm_games = await self.players.get_deathmatch_game_count(user_id)
+        return self.presenter.favorites_page(summary, favorite, player_dm_games=dm_games)
 
     async def start_deathmatch(self, user_id: int) -> Page:
+        if await self.deathmatch.has_active_round(user_id):
+            return self.presenter.deathmatch_resume_prompt()
         result = await self.deathmatch.request_start(user_id)
         if result.status == DeathmatchStartStatus.NEED_CLASSIC_GAMES:
             return self.presenter.deathmatch_need_classic_games(
@@ -72,10 +80,24 @@ class BotWorkflow:
         success = await self.arena.apply_vote(user_id, token, a_id, b_id, winner)
         if not success:
             return self.presenter.duplicate_classic_vote()
+        unlock_page = await self._maybe_deathmatch_unlock(user_id)
+        if unlock_page:
+            return unlock_page
         reward_page = await self._maybe_secret_reward(user_id)
         if reward_page:
             return reward_page
         return await self.duel_page(user_id)
+
+    async def resume_deathmatch(self, user_id: int) -> Page:
+        round_info = await self.deathmatch.resume_round(user_id)
+        if round_info:
+            return self.presenter.deathmatch_round_page(round_info)
+        await self.deathmatch.reset(user_id)
+        return await self.start_deathmatch(user_id)
+
+    async def restart_deathmatch(self, user_id: int) -> Page:
+        await self.deathmatch.reset(user_id)
+        return await self.start_deathmatch(user_id)
 
     async def process_deathmatch_vote(self, user_id: int, token: str, a_id: int, b_id: int, winner: str) -> Page:
         result = await self.deathmatch.process_vote(user_id, token, a_id, b_id, winner)
@@ -101,3 +123,15 @@ class BotWorkflow:
         if reward:
             return self.presenter.reward_page(reward.games, reward.url)
         return None
+
+    async def _maybe_deathmatch_unlock(self, user_id: int) -> Page | None:
+        min_games = self.deathmatch.min_classic_games
+        if min_games <= 0:
+            return None
+        if await self.players.has_unlocked_deathmatch(user_id):
+            return None
+        games = await self.players.get_classic_game_count(user_id)
+        if games < min_games:
+            return None
+        await self.players.mark_deathmatch_unlocked(user_id)
+        return self.presenter.deathmatch_unlocked_page(games=games, min_games=min_games)

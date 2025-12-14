@@ -4,33 +4,28 @@ import random
 import time
 from io import BytesIO
 from pathlib import Path
+from typing import Optional
 
-import aiohttp
 from PIL import Image
 
 from ...domain import Channel
-
-
-from urllib.parse import urlparse
+from .image_provider import ImageProvider
 
 
 class CombinedImageService:
     def __init__(
         self,
         *,
+        image_provider: ImageProvider,
         vs_images_dir: Path | None = None,
         cache_ttl: int = 60 * 60,
         height: int = 512,
-        allowed_hosts: set[str] | None = None,
-        max_download_bytes: int = 2_000_000,
     ):
         self.height = height
         self.cache_ttl = cache_ttl
         self.cache: dict[str, tuple[float, BytesIO]] = {}
         self.vs_images = list(vs_images_dir.glob("*.png")) if vs_images_dir else []
-        self._session: aiohttp.ClientSession | None = None
-        self.allowed_hosts = {host.lower() for host in allowed_hosts} if allowed_hosts else None
-        self.max_download_bytes = max_download_bytes
+        self._image_provider = image_provider
 
     async def build_preview(self, a: Channel, b: Channel) -> BytesIO:
         cache_key = f"{a.id}-{b.id}"
@@ -44,9 +39,8 @@ class CombinedImageService:
         return photo
 
     async def _compose_image(self, a: Channel, b: Channel) -> BytesIO:
-        session = self._get_session()
-        img_a = await self._download_image(session, (a.image_url or "").strip())
-        img_b = await self._download_image(session, (b.image_url or "").strip())
+        img_a = await self._load_channel_image((a.image_url or "").strip())
+        img_b = await self._load_channel_image((b.image_url or "").strip())
 
         if not img_a:
             img_a = self._placeholder_image()
@@ -72,43 +66,16 @@ class CombinedImageService:
         buffer.seek(0)
         return buffer
 
-    def _get_session(self) -> aiohttp.ClientSession:
-        if not self._session or self._session.closed:
-            timeout = aiohttp.ClientTimeout(total=15)
-            self._session = aiohttp.ClientSession(timeout=timeout)
-        return self._session
-
     async def close(self) -> None:
-        if self._session and not self._session.closed:
-            await self._session.close()
-        self._session = None
+        await self._image_provider.close()
 
-    def _is_allowed_url(self, url: str) -> bool:
+    async def _load_channel_image(self, url: str) -> Optional[Image.Image]:
         if not url:
-            return False
-        parsed = urlparse(url)
-        if parsed.scheme not in {"http", "https"}:
-            return False
-        host = (parsed.hostname or "").lower()
-        if not host:
-            return False
-        if self.allowed_hosts and host not in self.allowed_hosts:
-            return False
-        return True
-
-    async def _download_image(self, session: aiohttp.ClientSession, url: str) -> Image.Image | None:
-        if not self._is_allowed_url(url):
+            return None
+        data = await self._image_provider.fetch(url)
+        if not data:
             return None
         try:
-            async with session.get(url, timeout=10) as resp:
-                if resp.status != 200:
-                    return None
-                buffer = BytesIO()
-                async for chunk in resp.content.iter_chunked(64 * 1024):
-                    buffer.write(chunk)
-                    if buffer.tell() > self.max_download_bytes:
-                        return None
-                data = buffer.getvalue()
             img = Image.open(BytesIO(data))
             return img.convert("RGB")
         except Exception:

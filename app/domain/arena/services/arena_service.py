@@ -3,16 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from ..elo_rating import elo_update
-from ..models import Channel
-from ..repositories import (
-    ChannelsRepository,
-    PairingRepository,
-    VoteTokensRepository,
-    VotesRepository,
-)
-from ..value_objects import RatingBand, VoteToken
-from .pairing import PairingPolicy
+from ..elo import elo_update
+from ..rating_band import RatingBand
+from ...shared.models import Channel, VoteToken
+from ...shared.repositories import VoteTokensRepository
+from ...rating.repositories import ChannelsRepository
+from ..repositories.pairing import PairingRepository
+from ..repositories.votes import VotesRepository
+from .pairing_policy import PairingPolicy
 
 
 @dataclass(frozen=True)

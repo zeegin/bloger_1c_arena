@@ -1,7 +1,7 @@
 import unittest
 
 from app.application.queries.rating import RatingQueryService
-from app.domain.models import Channel, DeathmatchStats, RatingStats
+from app.domain.shared.models import Channel, DeathmatchStats, RatingStats
 from app.domain.rating import RatingService
 
 

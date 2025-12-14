@@ -1,4 +1,5 @@
-from .service import (
+from .models import DeathmatchState
+from .services import (
     DeathmatchRound,
     DeathmatchService,
     DeathmatchStartResult,
@@ -9,6 +10,7 @@ from .service import (
 
 __all__ = [
     "DeathmatchService",
+    "DeathmatchState",
     "DeathmatchRound",
     "DeathmatchStartResult",
     "DeathmatchStartStatus",

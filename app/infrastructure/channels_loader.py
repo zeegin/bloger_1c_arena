@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from ..domain.repositories import ChannelsRepository
+from ..domain.rating.repositories import ChannelsRepository
 
 
 def load_channels_from_yaml(path: str) -> list[dict]:

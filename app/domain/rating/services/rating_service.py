@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from ..models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
+from ...shared.models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
 from ..repositories import ChannelsRepository, StatsRepository
 
 

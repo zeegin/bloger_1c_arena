@@ -6,14 +6,20 @@ from app.domain.players import PlayersService, RewardGrant, RewardThreshold
 class FakePlayersRepo:
     def __init__(self):
         self.games = {}
+        self.draws = {}
         self.reward_stage = {}
         self.favorites = {}
+        self.deathmatch_games = {}
+        self.dm_unlocked = set()
 
     async def upsert(self, tg_user_id, username, first_name):
         return tg_user_id
 
     async def get_classic_games(self, user_id):
         return self.games.get(user_id, 0)
+
+    async def get_draw_count(self, user_id):
+        return self.draws.get(user_id, 0)
 
     async def get_favorite(self, user_id):
         return self.favorites.get(user_id)
@@ -26,6 +32,21 @@ class FakePlayersRepo:
 
     async def set_reward_stage(self, user_id, stage):
         self.reward_stage[user_id] = stage
+
+    async def is_deathmatch_unlocked(self, user_id):
+        return False
+
+    async def mark_deathmatch_unlocked(self, user_id):
+        pass
+
+    async def get_deathmatch_games(self, user_id):
+        return self.deathmatch_games.get(user_id, 0)
+
+    async def is_deathmatch_unlocked(self, user_id):
+        return user_id in self.dm_unlocked
+
+    async def mark_deathmatch_unlocked(self, user_id):
+        self.dm_unlocked.add(user_id)
 
 
 class PlayersServiceTests(unittest.IsolatedAsyncioTestCase):

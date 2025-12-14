@@ -12,6 +12,7 @@
 | `is_admin` | INTEGER | Флаг администратора (0/1) |
 | `favorite_channel_id` | INTEGER FK → `channels.id` | Любимчик из режима deathmatch |
 | `reward_stage` | INTEGER | Порог, для которого уже выдан секретный приз (0 / 350 / 700) |
+| `deathmatch_unlocked` | INTEGER | Флаг, что пользователь увидел уведомление о доступе к Deathmatch |
 | `created_at` | TEXT | время регистрации (`datetime('now')`) |
 
 Дополнительно: при `INSERT ... ON CONFLICT` Telegram-данные обновляются, любимчик устанавливается отдельным методом `set_user_favorite_channel`.

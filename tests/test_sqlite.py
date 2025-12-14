@@ -4,8 +4,9 @@ from pathlib import Path
 
 import unittest
 
-from app.domain.models import Channel, DeathmatchState
-from app.repositories.sqlite import (
+from app.domain.shared.models import Channel
+from app.domain.deathmatch.models import DeathmatchState
+from app.infrastructure.sqlite import (
     SQLiteChannelsRepository,
     SQLiteDatabase,
     SQLiteDeathmatchRepository,
@@ -101,6 +102,9 @@ class SQLiteRepositoriesTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.players.get_reward_stage(user_id), 0)
         await self.players.set_reward_stage(user_id, 350)
         self.assertEqual(await self.players.get_reward_stage(user_id), 350)
+        self.assertFalse(await self.players.is_deathmatch_unlocked(user_id))
+        await self.players.mark_deathmatch_unlocked(user_id)
+        self.assertTrue(await self.players.is_deathmatch_unlocked(user_id))
 
         await self.players.set_favorite(user_id, channel.id)
         favorite = await self.players.get_favorite(user_id)
@@ -124,6 +128,30 @@ class SQLiteRepositoriesTests(unittest.IsolatedAsyncioTestCase):
             await conn.commit()
 
         self.assertEqual(await self.players.get_classic_games(user_id), 1)
+        self.assertEqual(await self.players.get_draw_count(user_id), 0)
+
+        async with self.db.connect() as conn:
+            await conn.execute(
+                """
+                INSERT INTO votes(
+                  user_id, channel_a_id, channel_b_id, winner_channel_id,
+                  rating_a_before, rating_b_before, rating_a_after, rating_b_after
+                )
+                VALUES(?, ?, ?, NULL, 1500, 1500, 1505, 1495)
+                """,
+                (user_id, channel.id, opponent.id),
+            )
+            await conn.execute(
+                """
+                INSERT INTO deathmatch_votes(user_id, champion_id, channel_a_id, channel_b_id, winner_channel_id)
+                VALUES(?, ?, ?, ?, ?)
+                """,
+                (user_id, None, channel.id, opponent.id, channel.id),
+            )
+            await conn.commit()
+
+        self.assertEqual(await self.players.get_draw_count(user_id), 1)
+        self.assertEqual(await self.players.get_deathmatch_game_count(user_id), 1)
 
     async def test_stats_repository_counts_games_and_players(self):
         user_a = await self._create_user(100)
@@ -213,6 +241,11 @@ class SQLiteRepositoriesTests(unittest.IsolatedAsyncioTestCase):
                 channel_b_id=channel_a.id,
             )
         )
+        active = await self.vote_tokens.get_active(user_id, "classic")
+        self.assertIsNotNone(active)
+        self.assertEqual(active.channel_a_id, channel_a.id)
+        await self.vote_tokens.invalidate(user_id, "classic")
+        self.assertIsNone(await self.vote_tokens.get_active(user_id, "classic"))
 
     async def test_votes_repository_records_and_updates_channels(self):
         channel_a = await self._insert_channel("Alpha", "https://t.me/alpha", rating=1500, games=10)
@@ -250,7 +283,14 @@ class SQLiteRepositoriesTests(unittest.IsolatedAsyncioTestCase):
         user_id = await self._create_user()
         champion = await self._insert_channel("Alpha", "https://t.me/alpha")
         opponent = await self._insert_channel("Beta", "https://t.me/beta")
-        state = DeathmatchState(user_id=user_id, champion_id=champion.id, seen_ids=(champion.id,), remaining_ids=(opponent.id,))
+        state = DeathmatchState(
+            user_id=user_id,
+            champion_id=champion.id,
+            seen_ids=(champion.id,),
+            remaining_ids=(opponent.id,),
+            rounds_played=0,
+            round_total=1,
+        )
 
         self.assertIsNone(await self.deathmatch.get_state(user_id))
         await self.deathmatch.save_state(state)

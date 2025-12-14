@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Sequence
 
-from ..models import Channel, DeathmatchState
-from ..players import PlayersService
-from ..rating import RatingService
-from ..repositories import ChannelsRepository, DeathmatchRepository, VoteTokensRepository
-from ..value_objects import VoteToken
+from ...shared.models import Channel, VoteToken
+from ..models import DeathmatchState
+from ...shared.repositories import Randomizer
+from ...players import PlayersService
+from ...rating import RatingService
+from ...rating.repositories import ChannelsRepository
+from ...shared.repositories import VoteTokensRepository
+from ..repositories import DeathmatchRepository
 
 
 @dataclass(frozen=True)
@@ -17,6 +20,8 @@ class DeathmatchRound:
     opponent: Channel
     token: str
     initial: bool
+    number: int
+    total: int
 
 
 class DeathmatchStartStatus(Enum):
@@ -52,6 +57,8 @@ class DeathmatchService:
     Держит состояние чемпионов и очередь претендентов независимо от транспорта.
     """
 
+    MAX_ROUNDS = 20
+
     def __init__(
         self,
         *,
@@ -62,6 +69,7 @@ class DeathmatchService:
         channels_repo: ChannelsRepository,
         deathmatch_repo: DeathmatchRepository,
         vote_tokens: VoteTokensRepository,
+        randomizer: Randomizer,
     ):
         self._min_classic_games = min_classic_games
         self._top_limit = top_limit
@@ -70,12 +78,14 @@ class DeathmatchService:
         self._channels = channels_repo
         self._deathmatch_repo = deathmatch_repo
         self._vote_tokens = vote_tokens
+        self._rand = randomizer
 
     @property
     def min_classic_games(self) -> int:
         return self._min_classic_games
 
     async def request_start(self, user_id: int) -> DeathmatchStartResult:
+        await self._vote_tokens.invalidate(user_id, "deathmatch")
         games_played = await self._players.get_classic_game_count(user_id)
         if games_played < self._min_classic_games:
             return DeathmatchStartResult(
@@ -87,19 +97,73 @@ class DeathmatchService:
         if len(top) < 2:
             return DeathmatchStartResult(status=DeathmatchStartStatus.NOT_ENOUGH_CHANNELS)
 
-        current = top[0]
-        opponent = top[1]
-        remaining_ids = [ch.id for ch in top[2:]]
+        selection_cap = max(2, self.MAX_ROUNDS + 1)
+        selection_pool = top[:selection_cap]
+        if len(selection_pool) < 2:
+            return DeathmatchStartResult(status=DeathmatchStartStatus.NOT_ENOUGH_CHANNELS)
+
+        current = self._rand.choice(selection_pool)
+        opponent_candidates = [ch for ch in selection_pool if ch.id != current.id]
+        if not opponent_candidates:
+            return DeathmatchStartResult(status=DeathmatchStartStatus.NOT_ENOUGH_CHANNELS)
+
+        opponents = self._expand_opponents(opponent_candidates, self.MAX_ROUNDS)
+        opponent = opponents[0]
+        remaining_ids = [ch.id for ch in opponents[1:]]
         seen_ids = {current.id, opponent.id}
         state = DeathmatchState(
             user_id=user_id,
             champion_id=None,
             seen_ids=tuple(seen_ids),
             remaining_ids=tuple(remaining_ids),
+            rounds_played=0,
+            round_total=self.MAX_ROUNDS,
         )
         await self._deathmatch_repo.save_state(state)
-        round_info = await self._make_round(user_id, current, opponent, initial=True)
+        round_info = await self._make_round(
+            user_id,
+            current,
+            opponent,
+            initial=True,
+            round_number=1,
+            round_total=self.MAX_ROUNDS,
+        )
         return DeathmatchStartResult(status=DeathmatchStartStatus.OK, round=round_info)
+
+    async def has_active_round(self, user_id: int) -> bool:
+        state = await self._deathmatch_repo.get_state(user_id)
+        if not state:
+            return False
+        active = await self._vote_tokens.get_active(user_id, "deathmatch")
+        if active:
+            return True
+        await self._deathmatch_repo.delete_state(user_id)
+        return False
+
+    async def resume_round(self, user_id: int) -> Optional[DeathmatchRound]:
+        state = await self._deathmatch_repo.get_state(user_id)
+        if not state:
+            return None
+        token_info = await self._vote_tokens.get_active(user_id, "deathmatch")
+        if not token_info:
+            await self._deathmatch_repo.delete_state(user_id)
+            return None
+        current = await self._channels.get(token_info.channel_a_id)
+        opponent = await self._channels.get(token_info.channel_b_id)
+        initial = state.champion_id is None
+        round_number = min(state.round_total, state.rounds_played + 1)
+        return DeathmatchRound(
+            current=current,
+            opponent=opponent,
+            token=token_info.token.value,
+            initial=initial,
+            number=round_number,
+            total=state.round_total,
+        )
+
+    async def reset(self, user_id: int) -> None:
+        await self._deathmatch_repo.delete_state(user_id)
+        await self._vote_tokens.invalidate(user_id, "deathmatch")
 
     async def process_vote(
         self,
@@ -143,12 +207,8 @@ class DeathmatchService:
         seen_ids.update({a_id, b_id, winner_id})
         remaining_ids = list(state.remaining_ids)
 
-        next_opponent = None
-        if remaining_ids:
-            next_id = remaining_ids.pop(0)
-            next_opponent = await self._channels.get(next_id)
-
-        if not next_opponent:
+        rounds_completed = state.rounds_played + 1
+        if rounds_completed >= state.round_total or not remaining_ids:
             await self._deathmatch_repo.delete_state(user_id)
             await self._players.set_favorite_channel(user_id, winner_channel.id)
             return DeathmatchVoteResult(
@@ -156,25 +216,60 @@ class DeathmatchService:
                 champion=winner_channel,
             )
 
+        next_id = remaining_ids.pop(0)
+        next_opponent = await self._channels.get(next_id)
         seen_ids.add(next_opponent.id)
         new_state = DeathmatchState(
             user_id=user_id,
             champion_id=winner_id,
             seen_ids=tuple(seen_ids),
             remaining_ids=tuple(remaining_ids),
+            rounds_played=rounds_completed,
+            round_total=state.round_total,
         )
         await self._deathmatch_repo.save_state(new_state)
-        round_info = await self._make_round(user_id, winner_channel, next_opponent, initial=False)
+        round_info = await self._make_round(
+            user_id,
+            winner_channel,
+            next_opponent,
+            initial=False,
+            round_number=rounds_completed + 1,
+            round_total=state.round_total,
+        )
         return DeathmatchVoteResult(
             status=DeathmatchVoteStatus.NEXT_ROUND,
             round=round_info,
         )
 
-    async def _make_round(self, user_id: int, current: Channel, opponent: Channel, *, initial: bool) -> DeathmatchRound:
+    def _expand_opponents(self, pool: Sequence[Channel], rounds: int) -> list[Channel]:
+        candidates = list(pool)
+        expanded: list[Channel] = []
+        while len(expanded) < rounds:
+            self._rand.shuffle(candidates)
+            expanded.extend(candidates)
+        return expanded[:rounds]
+
+    async def _make_round(
+        self,
+        user_id: int,
+        current: Channel,
+        opponent: Channel,
+        *,
+        initial: bool,
+        round_number: int,
+        round_total: int,
+    ) -> DeathmatchRound:
         token = await self._vote_tokens.create(
             user_id,
             "deathmatch",
             channel_a_id=current.id,
             channel_b_id=opponent.id,
         )
-        return DeathmatchRound(current=current, opponent=opponent, token=token.value, initial=initial)
+        return DeathmatchRound(
+            current=current,
+            opponent=opponent,
+            token=token.value,
+            initial=initial,
+            number=round_number,
+            total=round_total,
+        )

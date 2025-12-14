@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from ..models import Channel
+from ...shared.models import Channel
 from ..repositories import PlayersRepository
 
 
@@ -20,6 +20,9 @@ class PlayersService:
 
     async def get_classic_game_count(self, user_id: int) -> int:
         return await self._repo.get_classic_games(user_id)
+
+    async def get_draw_count(self, user_id: int) -> int:
+        return await self._repo.get_draw_count(user_id)
 
     async def set_favorite_channel(self, user_id: int, channel_id: Optional[int]) -> None:
         await self._repo.set_favorite(user_id, channel_id)
@@ -47,6 +50,15 @@ class PlayersService:
                 await self.set_reward_stage(user_id, threshold.limit)
                 return RewardGrant(games=games, url=threshold.url)
         return None
+
+    async def has_unlocked_deathmatch(self, user_id: int) -> bool:
+        return await self._repo.is_deathmatch_unlocked(user_id)
+
+    async def mark_deathmatch_unlocked(self, user_id: int) -> None:
+        await self._repo.mark_deathmatch_unlocked(user_id)
+
+    async def get_deathmatch_game_count(self, user_id: int) -> int:
+        return await self._repo.get_deathmatch_games(user_id)
 
 
 @dataclass(frozen=True)

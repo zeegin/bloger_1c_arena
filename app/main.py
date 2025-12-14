@@ -1,4 +1,7 @@
+import asyncio
+import logging
 import os
+
 from dotenv import load_dotenv
 from aiogram import Bot
 
@@ -7,6 +10,11 @@ from .application.bootstrap import bootstrap_app
 from .application.container import AppConfig
 
 load_dotenv()
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 def load_app_config() -> AppConfig:
@@ -28,7 +36,7 @@ def load_app_config() -> AppConfig:
         if host.strip()
     } or None
     max_image_bytes = int(os.getenv("IMAGE_MAX_BYTES", "2000000"))
-    return AppConfig(
+    config = AppConfig(
         bot_token=bot_token,
         db_path=db_path,
         k_factor=k_factor,
@@ -41,23 +49,50 @@ def load_app_config() -> AppConfig:
         image_allowed_hosts=allowed_hosts,
         max_image_size_bytes=max_image_bytes,
     )
+    logger.info(
+        "Config loaded: db_path=%s, top_n=%s, min_dm_games=%s, "
+        "sync_channels=%s, delete_missing=%s, image_hosts=%s, max_image_bytes=%s",
+        config.db_path,
+        config.top_n,
+        config.min_classic_games_for_dm,
+        config.sync_channels_on_start,
+        config.delete_missing_channels,
+        ",".join(sorted(config.image_allowed_hosts)) if config.image_allowed_hosts else "any",
+        config.max_image_size_bytes,
+    )
+    return config
 
 
 async def main():
     config = load_app_config()
+    logger.info("Bootstrapping application")
     async with bootstrap_app(config) as container:
         if config.sync_channels_on_start:
+            logger.info("Syncing channels from channels.yaml (delete_missing=%s)", config.delete_missing_channels)
             await container.sync_channels(
                 "channels.yaml",
                 delete_missing=config.delete_missing_channels,
             )
+            logger.info("Channels sync finished")
+        else:
+            logger.info("Skip channels sync because SYNC_CHANNELS_ON_START=0")
 
+        logger.info("Building Telegram bot application")
         bot_app = TelegramBotApp(container)
         bot = Bot(config.bot_token)
         dp = bot_app.build_dispatcher()
-        await dp.start_polling(bot)
+        logger.info("Starting polling loop")
+        try:
+            await dp.start_polling(bot)
+        except Exception:
+            logger.exception("Polling stopped due to unexpected error")
+            raise
+        finally:
+            logger.info("Polling loop finished")
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user, shutting down")

@@ -9,7 +9,9 @@ from ..domain.deathmatch import DeathmatchService
 from ..domain.players import PlayersService
 from ..domain.rating import RatingService
 from ..infrastructure import sync_channels
-from ..repositories.sqlite import (
+from ..infrastructure.images import CachedImageProvider, ImageDownloader
+from ..infrastructure.random import SystemRandomizer
+from ..infrastructure.sqlite import (
     SQLiteChannelsRepository,
     SQLiteDatabase,
     SQLiteDeathmatchRepository,
@@ -19,7 +21,6 @@ from ..repositories.sqlite import (
     SQLiteVoteTokensRepository,
     SQLiteVotesRepository,
 )
-from ..services.catalog import CatalogService
 from .helpers.image_preview import CombinedImageService
 from .media_service import MediaService
 from .presenters import BotPresenter
@@ -48,7 +49,6 @@ class AppContainer:
         self,
         *,
         config: AppConfig,
-        catalog_service: CatalogService,
         rating_service: RatingService,
         rating_queries: RatingQueryService,
         players_service: PlayersService,
@@ -60,7 +60,6 @@ class AppContainer:
         channels_repo: SQLiteChannelsRepository,
     ):
         self.config = config
-        self.catalog_service = catalog_service
         self.rating_service = rating_service
         self.rating_queries = rating_queries
         self.players_service = players_service
@@ -97,7 +96,6 @@ def create_container(config: AppConfig) -> AppContainer:
     deathmatch_repo = SQLiteDeathmatchRepository(database)
     pairing_repo = SQLitePairingRepository(database)
 
-    catalog_service = CatalogService(channels_repo)
     rating_service = RatingService(channels_repo, stats_repo)
     rating_queries = RatingQueryService(rating_service)
     players_service = PlayersService(players_repo)
@@ -116,6 +114,7 @@ def create_container(config: AppConfig) -> AppContainer:
         channels_repo=channels_repo,
         deathmatch_repo=deathmatch_repo,
         vote_tokens=vote_tokens_repo,
+        randomizer=SystemRandomizer(),
     )
 
     if config.image_assets_path:
@@ -132,17 +131,21 @@ def create_container(config: AppConfig) -> AppContainer:
         else:
             logger.warning("Default image assets directory '%s' not found; previews may lack VS images", fallback)
             vs_dir = None
+    image_provider = CachedImageProvider(
+        downloader=ImageDownloader(
+            allowed_hosts=config.image_allowed_hosts,
+            max_download_bytes=config.max_image_size_bytes,
+        )
+    )
     image_backend = CombinedImageService(
+        image_provider=image_provider,
         vs_images_dir=vs_dir,
-        allowed_hosts=config.image_allowed_hosts,
-        max_download_bytes=config.max_image_size_bytes,
     )
     media_service = MediaService(image_backend)
     presenter = BotPresenter()
 
     return AppContainer(
         config=config,
-        catalog_service=catalog_service,
         rating_service=rating_service,
         rating_queries=rating_queries,
         players_service=players_service,

@@ -21,11 +21,21 @@ docker compose up --build
 
 ## Ключевые компоненты
 
-- `app/domain/arena|deathmatch|rating|players` — доменные bounded contexts и бизнес-логика.
-- `app/services/catalog.py` — каталожные операции поверх хранилища.
-- `app/application/workflow.py` — бот-вью и навигация.
-- `app/application/helpers/image_preview.py` — генерация превью `A vs B`.
-- `app/repositories/sqlite.py` — подключения к SQLite, миграции и реализации репозиториев.
+- `app/domain/arena|deathmatch|rating|players` — доменные bounded contexts. Каждый контекст содержит свои `services/` и `repositories/` (интерфейсы) и опирается только на shared kernel.
+- `app/domain/shared` — shared kernel: общие value objects (`Channel`, `VoteToken`, `RatingStats`, …) и общие протоколы (например, хранилище токенов голосования).
+- `app/application` — сценарии и представление бота: `workflow.py` оркестрирует доменные сервисы, `presenters/` отвечают за тексты и шаблоны, `media_service.py` собирает карточки дуэлей.
+- `app/infrastructure` — реализации портов: `sqlite/` содержит адаптеры репозиториев и миграции БД, `images/` — загрузку и кеширование превью, `channels_loader.py` — синхронизацию справочника.
+- `tests/` — изолированные тесты workflow, presenter и инфраструктурных адаптеров (`tests/test_sqlite.py`, `tests/test_image_service.py` и др.).
+
+## Архитектура
+
+Проект построен по принципам DDD и чистой архитектуры:
+
+- **Bounded contexts**: `arena` отвечает за классические дуэли и Elo, `deathmatch` — за турнир на выбивание, `rating` — за чтение рейтингов и витрины, `players` — за состояние пользователей. Контексты не зависят друг от друга напрямую.
+- **Shared kernel**: папка `app/domain/shared` хранит только те value objects и протоколы, которые действительно используются в нескольких контекстах (каналы, статистика, токены голосования).
+- **Application layer**: `app/application/workflow.py` описывает user journey Telegram-бота и зависит только от доменных интерфейсов. Представления (`presenters/templates`) и медиасервис формируют конкретный UI/контент.
+- **Infrastructure layer**: конкретные реализации репозиториев находятся в `app/infrastructure/sqlite`. Другие адаптеры (загрузка изображений, синхронизация каналов) тоже собраны в инфраструктуре и внедряются через контейнер (`app/application/container.py`).
+- **Dependency flow**: Domain ← Application ← Infrastructure. Контейнер связывает зависимости на старте, что позволяет легко подменять адаптеры в тестах или при переходе на другую БД/транспорт.
 
 ## Обновление списка каналов
 

@@ -3,13 +3,8 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
-from ..domain.models import (
-    Channel,
-    DeathmatchState,
-    DeathmatchStats,
-    FavoriteChannelInfo,
-    RatingStats,
-)
+from ..domain.shared.models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
+from ..domain.deathmatch.models import DeathmatchState
 
 
 def _coerce(mapping: Mapping[str, Any], key: str, default: Any = None) -> Any:
@@ -57,11 +52,19 @@ def favorite_channel_from_row(row: Mapping[str, Any]) -> FavoriteChannelInfo:
 def deathmatch_state_from_row(row: Mapping[str, Any]) -> DeathmatchState:
     seen_ids = tuple(int(x) for x in json.loads(row.get("seen_ids") or "[]"))
     remaining_ids = tuple(int(x) for x in json.loads(row.get("remaining_ids") or "[]"))
+    champion_raw = row.get("champion_id")
+    champion_id = int(champion_raw) if champion_raw is not None else None
+    rounds_played = int(_coerce(row, "rounds_played", 0) or 0)
+    round_total = int(_coerce(row, "round_total", 0) or 0)
+    if round_total <= 0:
+        round_total = max(1, len(remaining_ids) + 1)
     return DeathmatchState(
         user_id=int(row["user_id"]),
-        champion_id=row.get("champion_id"),
+        champion_id=champion_id,
         seen_ids=seen_ids,
         remaining_ids=remaining_ids,
+        rounds_played=rounds_played,
+        round_total=round_total,
     )
 
 

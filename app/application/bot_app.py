@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import List
 
 from aiogram import Dispatcher, F
@@ -25,6 +26,7 @@ class TelegramBotApp:
             reward_350_url=container.config.reward_350_url,
             reward_700_url=container.config.reward_700_url,
         )
+        self._logger = logging.getLogger(__name__)
 
     @property
     def players(self):
@@ -92,7 +94,17 @@ class TelegramBotApp:
     async def _ensure_user(self, tg_user):
         return await self.players.upsert_user(tg_user.id, tg_user.username, tg_user.first_name)
 
+    def _format_user(self, tg_user) -> str:
+        if not tg_user:
+            return "unknown (id=?)"
+        username = tg_user.username or tg_user.first_name or "unknown"
+        return f"{username} (id={tg_user.id})"
+
+    def _log_action(self, tg_user, action: str) -> None:
+        self._logger.info("User %s triggered %s", self._format_user(tg_user), action)
+
     async def _handle_message(self, message: Message, handler):
+        self._log_action(message.from_user, f"message:{message.text or message.content_type}")
         await self._ensure_user(message.from_user)
         page = await handler()
         if page:
@@ -100,6 +112,7 @@ class TelegramBotApp:
 
     async def _handle_query(self, cq: CallbackQuery, handler):
         await self._safe_answer(cq)
+        self._log_action(cq.from_user, f"callback:{cq.data or '<empty>'}")
         user_id = await self._ensure_user(cq.from_user)
         page = await handler(user_id, cq)
         if page:
@@ -120,10 +133,10 @@ class TelegramBotApp:
                 if action == "play":
                     return await self.workflow.duel_page(user_id)
                 if action == "top":
-                    return await self.workflow.top_page()
+                    return await self.workflow.top_page(user_id)
                 if action == "deathmatch":
                     return await self.workflow.start_deathmatch(user_id)
-                return await self.workflow.top_page()
+                return await self.workflow.top_page(user_id)
 
             await self._handle_query(cq, handler)
 
@@ -133,7 +146,7 @@ class TelegramBotApp:
 
         @dp.callback_query(F.data == "top:back")
         async def top_back(cq: CallbackQuery):
-            await self._handle_query(cq, lambda _user_id, _cq: self.workflow.top_page())
+            await self._handle_query(cq, lambda user_id, _cq: self.workflow.top_page(user_id))
 
         @dp.callback_query(F.data == "top:favorites")
         async def top_favorites(cq: CallbackQuery):
@@ -174,6 +187,18 @@ class TelegramBotApp:
                     b_id=int(b_id),
                     winner=winner,
                 )
+
+            await self._handle_query(cq, handler)
+
+        @dp.callback_query(F.data.startswith("deathmatch:"))
+        async def deathmatch_actions(cq: CallbackQuery):
+            async def handler(user_id, cq):
+                action = (cq.data or "").split(":", 1)[1]
+                if action == "resume":
+                    return await self.workflow.resume_deathmatch(user_id)
+                if action == "restart":
+                    return await self.workflow.restart_deathmatch(user_id)
+                return await self.workflow.start_deathmatch(user_id)
 
             await self._handle_query(cq, handler)
 

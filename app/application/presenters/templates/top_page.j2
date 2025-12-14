@@ -1,8 +1,15 @@
 📊 <b>Топ каналов:</b>
 
-{% for entry in entries -%}
+{% for entry in entries %}
 {{ loop.index }}. <a href="{{ entry.tg_url }}">{{ entry.title }}</a> — <b>{{ entry.rating | round(0) | int }}</b> (игр: {{ entry.games }}, побед: {{ entry.wins }})
-{% endfor -%}
+{% endfor %}
+
 
 🕹️ Сыграно игр: <b>{{ stats.games }}</b>
 👥 Игроков: <b>{{ stats.players }}</b>
+
+{% if player_stats %}
+👤 <b>Твоя статистика:</b>
+- Классических игр: <b>{{ player_stats.classic_games }}</b>
+- Ничьих: <b>{{ player_stats.draws }}</b>
+{% endif %}

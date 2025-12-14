@@ -4,14 +4,6 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class VoteToken:
-    value: str
-
-    def __str__(self) -> str:
-        return self.value
-
-
-@dataclass(frozen=True)
 class RatingBand:
     lower: int
     upper: int

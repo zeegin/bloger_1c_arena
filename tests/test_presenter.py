@@ -4,7 +4,7 @@ from app.application.presenters import BotPresenter
 from app.application.queries.rating import FavoritesSummary, TopEntry, TopListing, WeightedEntry
 from app.domain.arena import DuelPair
 from app.domain.deathmatch import DeathmatchRound
-from app.domain.models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
+from app.domain.shared.models import Channel, DeathmatchStats, FavoriteChannelInfo, RatingStats
 
 
 def make_channel(idx: int, title: str, description: str = "") -> Channel:
@@ -55,6 +55,19 @@ class BotPresenterTests(unittest.TestCase):
         self.assertIn("30", page.text)
         self.assertIn("11", page.text)
 
+    def test_top_page_includes_player_stats_when_available(self):
+        listing = TopListing(
+            entries=[
+                TopEntry(title="Alpha", tg_url="https://a", rating=1500, games=10, wins=5),
+            ],
+            stats=RatingStats(games=10, players=3),
+        )
+
+        page = self.presenter.top_page(listing, player_stats={"classic_games": 42, "draws": 7})
+
+        self.assertIn("42", page.text)
+        self.assertIn("7", page.text)
+
     def test_weighted_page_lists_percentages(self):
         entries = [
             WeightedEntry(title="Alpha", tg_url="https://a", wins=9, games=10, rate_percent=90.0),
@@ -73,11 +86,12 @@ class BotPresenterTests(unittest.TestCase):
         )
         user_favorite = make_channel(7, "Beta")
 
-        page = self.presenter.favorites_page(summary, user_favorite)
+        page = self.presenter.favorites_page(summary, user_favorite, player_dm_games=7)
 
         self.assertIn("Alpha", page.text)
         self.assertIn("Beta", page.text)
         self.assertIn("5", page.text)
+        self.assertIn("7", page.text)
 
     def test_deathmatch_round_template(self):
         round_info = DeathmatchRound(
@@ -85,10 +99,26 @@ class BotPresenterTests(unittest.TestCase):
             opponent=make_channel(2, "Challenger", "Brave"),
             token="round1",
             initial=False,
+            number=3,
+            total=20,
         )
 
         page = self.presenter.deathmatch_round_page(round_info)
 
         self.assertIn("Deathmatch продолжается", page.text)
         self.assertIn("Challenger", page.text)
+        self.assertIn("Раунд", page.text)
         self.assertEqual(len(page.media), 1)
+
+    def test_deathmatch_unlock_page(self):
+        page = self.presenter.deathmatch_unlocked_page(games=50, min_games=50)
+
+        self.assertIn("Теперь тебе открыт режим", page.text)
+        self.assertIn("50", page.text)
+
+    def test_deathmatch_resume_prompt(self):
+        page = self.presenter.deathmatch_resume_prompt()
+        self.assertIn("незавершённый deathmatch", page.text.lower())
+        callbacks = [btn.callback_data for row in page.buttons for btn in row]
+        self.assertIn("deathmatch:resume", callbacks)
+        self.assertIn("deathmatch:restart", callbacks)

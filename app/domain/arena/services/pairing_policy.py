@@ -3,8 +3,8 @@ from __future__ import annotations
 import random
 from typing import Optional, Tuple
 
-from ..models import Channel
-from ..repositories import PairingRepository
+from ...shared.models import Channel
+from ..repositories.pairing import PairingRepository
 
 
 class PairingPolicy:
